@@ -24,7 +24,7 @@ function CocoLogin(){
         if (result?.status === "success") {
       toast.success("Successfully Logged in");
       localStorage.setItem("token", result.token); 
-      navigate("/createFeedback");
+      navigate("/cocoDashboard");
     } else {
       toast.error(result?.error || "Invalid Email or Password");
     }
