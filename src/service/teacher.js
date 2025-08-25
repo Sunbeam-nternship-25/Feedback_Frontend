@@ -54,7 +54,7 @@ export async function getTeacherById() {
   const token = localStorage.getItem("token");
   const url = `${config.cocoServerBaseURL}/teacher/teacherbyid`;
 
-  const response = await axios.get(url, {
+  const response = await axios.post(url, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
