@@ -25,7 +25,7 @@ function CourseForm({ onSubmit, onCancel, initialData }) {
         <input
           value={courseName}
           onChange={(e) => setCourseName(e.target.value)}
-          placeholder="Enter course name"
+          placeholder="Enter CourseName"
           required
         />
       </label>
