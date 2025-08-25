@@ -1,5 +1,6 @@
 import axios from "axios";
-import { config } from "./config";
+import  {config}  from "../service/config";
+
 
 // for Student module
 export async function allCourse() {
@@ -10,11 +11,15 @@ export async function allCourse() {
 
 // for CoCo module
 export async function getCourses() {
+  const token = localStorage.getItem("token");
   try {
     const url = `${config.cocoServerBaseURL}/course/courses`;
-    const response = await axios.get(url);
-    return response.data; // { status: 'success', data: [...] }
+    const response = await axios.get(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
   } catch (err) {
+    console.error("Error fetching courses:", err);
     return { status: "error", error: err.message };
   }
 }
