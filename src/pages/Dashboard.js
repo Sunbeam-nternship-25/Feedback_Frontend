@@ -1,127 +1,280 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from "react";
+import api from "../api";
+import CourseForm from "./CourseForm";
 import "./Dashboard.css";
-import {
-  FaHome,
-  FaBook,
-  FaUsers,
-  FaChalkboardTeacher,
-  FaUserGraduate,
-  FaThLarge,
-  FaClipboardList,
-  FaQuestion,
-  FaChartBar,
-} from "react-icons/fa";
 
-const Dashboard = () => {
-  const [courseCount, setCourseCount] = useState(0);
-  const [studentCount, setStudentCount] = useState(0);
-  const [scheduleCount, setScheduleCount] = useState(0);
-  const [reportCount, setReportCount] = useState(0);
+function Dashboard() {
   const [courses, setCourses] = useState([]);
+  const [courseGroups, setCourseGroups] = useState([]);
+  const [modules, setModules] = useState([]);
+  const [moduleTypes, setModuleTypes] = useState([]);
+  const [activeFeedbacks, setActiveFeedbacks] = useState([]);
+  const [inactiveFeedbacks, setInactiveFeedbacks] = useState([]);
+  const [error, setError] = useState("");
+
+  // Course CRUD state
+  const [loadingCourses, setLoadingCourses] = useState(true);
+  const [showCourseForm, setShowCourseForm] = useState(false);
+  const [editingCourse, setEditingCourse] = useState(null);
 
   useEffect(() => {
-    // Fetch Courses
-    axios
-      .get("http://localhost:4000/course/allCourses")
-      .then((res) => {
-        setCourses(res.data);
-        setCourseCount(res.data.length);
-      })
-      .catch((err) => console.error("Error fetching courses:", err));
-
-    // Fetch Students
-    axios
-      .get("http://localhost:4000/student/allStudents")
-      .then((res) => setStudentCount(res.data.length))
-      .catch((err) => console.error("Error fetching students:", err));
-
-    // Fetch Feedback Schedules
-    axios
-      .get("http://localhost:4000/schedule/allSchedules")
-      .then((res) => setScheduleCount(res.data.length))
-      .catch((err) => console.error("Error fetching schedules:", err));
-
-    // Fetch Feedback Reports
-    axios
-      .get("http://localhost:4000/report/allReports")
-      .then((res) => setReportCount(res.data.length))
-      .catch((err) => console.error("Error fetching reports:", err));
+    fetchCourses();
+    fetchCourseGroups();
+    fetchModules();
+    fetchModuleTypes();
+    fetchFeedbacks();
   }, []);
+
+  // Fetch courses
+  const fetchCourses = async () => {
+    setLoadingCourses(true);
+    try {
+      const res = await api.get("/course/allCourses");
+      setCourses(res.data.data || []);
+      setError("");
+    } catch (err) {
+      setError("Failed to fetch courses");
+    } finally {
+      setLoadingCourses(false);
+    }
+  };
+
+  // Fetch others remain same
+  const fetchCourseGroups = async () => {
+    try {
+      const res = await api.get("/courseGroup/allCourseGroup");
+      setCourseGroups(res.data.data || []);
+    } catch {
+      setError("Failed to fetch course groups");
+    }
+  };
+
+  const fetchModules = async () => {
+    try {
+      const res = await api.get("/module/allModules");
+      setModules(res.data.data || []);
+    } catch {
+      setError("Failed to fetch modules");
+    }
+  };
+
+  const fetchModuleTypes = async () => {
+    try {
+      const res = await api.get("/moduleType/allModulesType");
+      setModuleTypes(res.data.data || []);
+    } catch {
+      setError("Failed to fetch module types");
+    }
+  };
+
+  const fetchFeedbacks = async () => {
+    try {
+      const activeRes = await api.get("/feedbackSchedule/activeFeedback");
+      setActiveFeedbacks(activeRes.data.data || []);
+      const inactiveRes = await api.get("/feedbackSchedule/deActiveFeedback");
+      setInactiveFeedbacks(inactiveRes.data.data || []);
+    } catch {
+      setError("Failed to fetch feedback schedules");
+    }
+  };
+
+  // Course CRUD handlers
+  const handleAddCourse = () => {
+    setEditingCourse(null);
+    setShowCourseForm(true);
+  };
+
+  const handleEditCourse = (course) => {
+    setEditingCourse(course);
+    setShowCourseForm(true);
+  };
+
+  const handleDeleteCourse = async (course_id) => {
+    if (!window.confirm("Are you sure you want to delete this course?")) return;
+    try {
+      await api.delete("/course/deleteCourse", { data: { course_id } });
+      fetchCourses();
+    } catch {
+      alert("Failed to delete course");
+    }
+  };
+
+  const handleCourseFormSubmit = async (formData) => {
+    try {
+      if (editingCourse) {
+        await api.put("/course/updateCourse", { course_id: editingCourse.course_id, ...formData });
+      } else {
+        await api.post("/course/insertCourse", formData);
+      }
+      setShowCourseForm(false);
+      fetchCourses();
+    } catch {
+      alert("Failed to save course");
+    }
+  };
+
+  const handleCourseFormCancel = () => {
+    setShowCourseForm(false);
+  };
 
   return (
     <div className="dashboard-container">
-      {/* Sidebar */}
-      <aside className="sidebar">
-        <h2 className="logo">Admin</h2>
-        <ul className="menu">
-          <li><FaHome /> Dashboard</li>
-          <li><FaBook /> Courses</li>
-          <li><FaUsers /> Groups</li>
-          <li><FaChalkboardTeacher /> Teachers</li>
-          <li><FaUserGraduate /> Students</li>
-          <li><FaThLarge /> Modules</li>
-          <li><FaClipboardList /> Module Types</li>
-          <li><FaClipboardList /> Feedback Schedules</li>
-          <li><FaQuestion /> Questions</li>
-          <li><FaChartBar /> Feedback Reports</li>
-        </ul>
-      </aside>
+      <h1>Admin Dashboard</h1>
 
-      {/* Main Content */}
-      <main className="main-content">
-        <h1>Admin Dashboard</h1>
+      {error && <div className="error">{error}</div>}
 
-        Top Stats
-        <div className="stats">
-          <div className="stat-box">
-            <h2>{courseCount}</h2>
-            <p>Courses</p>
-          </div>
-          <div className="stat-box">
-            <h2>{studentCount}</h2>
-            <p>Students</p>
-          </div>
-          <div className="stat-box">
-            <h2>{scheduleCount}</h2>
-            <p>Feedback Schedules</p>
-          </div>
-          {/* <div className="stat-box">
-            <h2>{reportCount}</h2>
-            <p>Feedback Reports</p>
-          </div> */}
-        </div> 
+      {/* Courses Section */}
+      <section className="dashboard-section">
+        <h2>Courses</h2>
+        {loadingCourses ? (
+          <p>Loading courses...</p>
+        ) : (
+          <>
+            {!showCourseForm && (
+              <button onClick={handleAddCourse} className="btn btn-primary mb-2">
+                Add New Course
+              </button>
+            )}
 
-        {/* Course List Table */}
-        <section className="course-list">
-          <h2>Course List</h2>
+            {showCourseForm && (
+              <CourseForm
+                initialData={editingCourse}
+                onSubmit={handleCourseFormSubmit}
+                onCancel={handleCourseFormCancel}
+              />
+            )}
+
+            <ul className="list">
+              {courses.map((course) => (
+                <li key={course.course_id} className="list-item">
+                  {course.course_name}
+                  <div>
+                    <button onClick={() => handleEditCourse(course)} className="btn btn-sm btn-secondary mr-2">
+                      Edit
+                    </button>
+                    <button onClick={() => handleDeleteCourse(course.course_id)} className="btn btn-sm btn-danger">
+                      Delete
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
+
+      {/* Other sections unchanged from your original dashboard */}
+
+      <section className="dashboard-section">
+        <h2>Course Groups</h2>
+        {courseGroups.length === 0 ? (
+          <p>No course groups found.</p>
+        ) : (
+          <ul>
+            {courseGroups.map((group, index) => (
+              <li key={group.group_id || index}>{group.group_name}</li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="dashboard-section">
+        <h2>Modules</h2>
+        {modules.length === 0 ? (
+          <p>No modules found.</p>
+        ) : (
+          <ul>
+            {modules.map((module) => (
+              <li key={module.module_id || module.id || module.moduleId}>
+                {module.module_name} (Course: {module.course_name})
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="dashboard-section">
+        <h2>Module Types</h2>
+        {moduleTypes.length === 0 ? (
+          <p>No module types found.</p>
+        ) : (
+          <ul>
+            {moduleTypes.map((type, index) => (
+              <li key={type.module_type_id || index}>{type.module_type_name}</li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="dashboard-section">
+        <h2>Feedback Schedules - Active</h2>
+        {activeFeedbacks.length === 0 ? (
+          <p>No active feedback schedules.</p>
+        ) : (
           <table>
             <thead>
               <tr>
-                <th>Course ID</th>
-                <th>Course Name</th>
-                <th>Modules</th>
-                <th>Actions</th>
+                <th>Teacher</th>
+                <th>Module</th>
+                <th>Module Type</th>
+                <th>Group</th>
+                <th>Course</th>
+                <th>Start Time</th>
+                <th>End Time</th>
               </tr>
             </thead>
             <tbody>
-              {courses.map((course) => (
-                <tr key={course.course_id}>
-                  <td>{course.course_id}</td>
-                  <td>{course.course_name}</td>
-                  <td>{course.modules || "N/A"}</td>
-                  <td>
-                    <button className="edit-btn">Edit</button>
-                    <button className="delete-btn">Delete</button>
-                  </td>
+              {activeFeedbacks.map((fb, idx) => (
+                <tr key={idx}>
+                  <td>{fb.first_name} {fb.last_name}</td>
+                  <td>{fb.module_name}</td>
+                  <td>{fb.module_type_name}</td>
+                  <td>{fb.group_name}</td>
+                  <td>{fb.course_name}</td>
+                  <td>{new Date(fb.start_time).toLocaleString()}</td>
+                  <td>{new Date(fb.end_time).toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </section>
-      </main>
+        )}
+      </section>
+
+      <section className="dashboard-section">
+        <h2>Feedback Schedules - Inactive</h2>
+        {inactiveFeedbacks.length === 0 ? (
+          <p>No inactive feedback schedules.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Teacher</th>
+                <th>Module</th>
+                <th>Module Type</th>
+                <th>Group</th>
+                <th>Course</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              {inactiveFeedbacks.map((fb, idx) => (
+                <tr key={idx}>
+                  <td>{fb.first_name} {fb.last_name}</td>
+                  <td>{fb.module_name}</td>
+                  <td>{fb.module_type_name}</td>
+                  <td>{fb.group_name}</td>
+                  <td>{fb.course_name}</td>
+                  <td>{new Date(fb.start_time).toLocaleString()}</td>
+                  <td>{new Date(fb.end_time).toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
     </div>
   );
-};
+}
 
 export default Dashboard;
