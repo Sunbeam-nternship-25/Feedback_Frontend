@@ -39,7 +39,7 @@ function Dashboard() {
     }
   };
 
-  // Fetch others remain same
+  // Fetch course groups
   const fetchCourseGroups = async () => {
     try {
       const res = await api.get("/courseGroup/allCourseGroup");
@@ -49,6 +49,7 @@ function Dashboard() {
     }
   };
 
+  // Fetch modules
   const fetchModules = async () => {
     try {
       const res = await api.get("/module/allModules");
@@ -58,6 +59,7 @@ function Dashboard() {
     }
   };
 
+  // Fetch module types
   const fetchModuleTypes = async () => {
     try {
       const res = await api.get("/moduleType/allModulesType");
@@ -67,6 +69,7 @@ function Dashboard() {
     }
   };
 
+  // Fetch feedback schedules
   const fetchFeedbacks = async () => {
     try {
       const activeRes = await api.get("/feedbackSchedule/activeFeedback");
@@ -78,17 +81,19 @@ function Dashboard() {
     }
   };
 
-  // Course CRUD handlers
+  // Handle Add Course button
   const handleAddCourse = () => {
     setEditingCourse(null);
     setShowCourseForm(true);
   };
 
+  // Handle Edit Course button sets editingCourse state and shows form
   const handleEditCourse = (course) => {
     setEditingCourse(course);
     setShowCourseForm(true);
   };
 
+  // Handle Delete Course button confirms and deletes then refreshes
   const handleDeleteCourse = async (course_id) => {
     if (!window.confirm("Are you sure you want to delete this course?")) return;
     try {
@@ -99,6 +104,7 @@ function Dashboard() {
     }
   };
 
+  // Handle submission of course form for add or edit
   const handleCourseFormSubmit = async (formData) => {
     try {
       if (editingCourse) {
@@ -107,14 +113,17 @@ function Dashboard() {
         await api.post("/course/insertCourse", formData);
       }
       setShowCourseForm(false);
+      setEditingCourse(null); // Clear editingCourse after submit
       fetchCourses();
     } catch {
       alert("Failed to save course");
     }
   };
 
+  // Cancel form hides it and clears editingCourse state
   const handleCourseFormCancel = () => {
     setShowCourseForm(false);
+    setEditingCourse(null);
   };
 
   return (
@@ -163,8 +172,7 @@ function Dashboard() {
         )}
       </section>
 
-      {/* Other sections unchanged from your original dashboard */}
-
+      {/* Course Groups */}
       <section className="dashboard-section">
         <h2>Course Groups</h2>
         {courseGroups.length === 0 ? (
@@ -178,6 +186,7 @@ function Dashboard() {
         )}
       </section>
 
+      {/* Modules */}
       <section className="dashboard-section">
         <h2>Modules</h2>
         {modules.length === 0 ? (
@@ -193,6 +202,7 @@ function Dashboard() {
         )}
       </section>
 
+      {/* Module Types */}
       <section className="dashboard-section">
         <h2>Module Types</h2>
         {moduleTypes.length === 0 ? (
@@ -206,6 +216,7 @@ function Dashboard() {
         )}
       </section>
 
+      {/* Feedback Schedules Active */}
       <section className="dashboard-section">
         <h2>Feedback Schedules - Active</h2>
         {activeFeedbacks.length === 0 ? (
@@ -240,6 +251,7 @@ function Dashboard() {
         )}
       </section>
 
+      {/* Feedback Schedules Inactive */}
       <section className="dashboard-section">
         <h2>Feedback Schedules - Inactive</h2>
         {inactiveFeedbacks.length === 0 ? (
