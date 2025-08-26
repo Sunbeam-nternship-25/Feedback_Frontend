@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 
-function CourseForm({ onSubmit, onCancel, initialData }) {
+function CourseForm({ initialData, onSubmit, onCancel }) {
   const [courseName, setCourseName] = useState("");
 
   useEffect(() => {
     if (initialData) {
-      setCourseName(initialData.course_name);
+      setCourseName(initialData.course_name || "");
+    } else {
+      setCourseName("");
     }
   }, [initialData]);
 
@@ -23,15 +25,18 @@ function CourseForm({ onSubmit, onCancel, initialData }) {
       <label>
         Course Name:
         <input
+          type="text"
           value={courseName}
           onChange={(e) => setCourseName(e.target.value)}
-          placeholder="Enter CourseName"
+          placeholder="Enter course name"
           required
         />
       </label>
-      <div>
+      <div style={{ marginTop: "10px" }}>
         <button type="submit" className="btn btn-primary">Save</button>
-        <button type="button" onClick={onCancel} className="btn btn-secondary">Cancel</button>
+        <button type="button" onClick={onCancel} className="btn btn-secondary" style={{ marginLeft: "10px" }}>
+          Cancel
+        </button>
       </div>
     </form>
   );
