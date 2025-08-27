@@ -3,6 +3,12 @@ import api from "../api";
 import CourseForm from "./CourseForm";
 import "./Dashboard.css";
 
+// Helper function to parse MySQL datetime to JS Date safely
+function parseMySqlDateTime(dt) {
+  if (!dt) return "";
+  return new Date(dt.replace(" ", "T"));
+}
+
 function Dashboard() {
   const [courses, setCourses] = useState([]);
   const [courseGroups, setCourseGroups] = useState([]);
@@ -12,7 +18,12 @@ function Dashboard() {
   const [inactiveFeedbacks, setInactiveFeedbacks] = useState([]);
   const [error, setError] = useState("");
 
-  // Course CRUD state
+  // Dropdown selections
+  const [selectedCourseGroup, setSelectedCourseGroup] = useState("");
+  const [selectedModule, setSelectedModule] = useState("");
+  const [selectedModuleType, setSelectedModuleType] = useState("");
+
+  // Course CRUD states
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [showCourseForm, setShowCourseForm] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null);
@@ -25,21 +36,19 @@ function Dashboard() {
     fetchFeedbacks();
   }, []);
 
-  // Fetch courses
   const fetchCourses = async () => {
     setLoadingCourses(true);
     try {
       const res = await api.get("/course/allCourses");
       setCourses(res.data.data || []);
       setError("");
-    } catch (err) {
+    } catch {
       setError("Failed to fetch courses");
     } finally {
       setLoadingCourses(false);
     }
   };
 
-  // Fetch course groups
   const fetchCourseGroups = async () => {
     try {
       const res = await api.get("/courseGroup/allCourseGroup");
@@ -49,7 +58,6 @@ function Dashboard() {
     }
   };
 
-  // Fetch modules
   const fetchModules = async () => {
     try {
       const res = await api.get("/module/allModules");
@@ -59,7 +67,6 @@ function Dashboard() {
     }
   };
 
-  // Fetch module types
   const fetchModuleTypes = async () => {
     try {
       const res = await api.get("/moduleType/allModulesType");
@@ -69,7 +76,6 @@ function Dashboard() {
     }
   };
 
-  // Fetch feedback schedules
   const fetchFeedbacks = async () => {
     try {
       const activeRes = await api.get("/feedbackSchedule/activeFeedback");
@@ -81,19 +87,17 @@ function Dashboard() {
     }
   };
 
-  // Handle Add Course button
+  // Course CRUD handlers unchanged
   const handleAddCourse = () => {
     setEditingCourse(null);
     setShowCourseForm(true);
   };
 
-  // Handle Edit Course button sets editingCourse state and shows form
   const handleEditCourse = (course) => {
     setEditingCourse(course);
     setShowCourseForm(true);
   };
 
-  // Handle Delete Course button confirms and deletes then refreshes
   const handleDeleteCourse = async (course_id) => {
     if (!window.confirm("Are you sure you want to delete this course?")) return;
     try {
@@ -104,7 +108,6 @@ function Dashboard() {
     }
   };
 
-  // Handle submission of course form for add or edit
   const handleCourseFormSubmit = async (formData) => {
     try {
       if (editingCourse) {
@@ -113,18 +116,22 @@ function Dashboard() {
         await api.post("/course/insertCourse", formData);
       }
       setShowCourseForm(false);
-      setEditingCourse(null); // Clear editingCourse after submit
+      setEditingCourse(null);
       fetchCourses();
     } catch {
       alert("Failed to save course");
     }
   };
 
-  // Cancel form hides it and clears editingCourse state
   const handleCourseFormCancel = () => {
     setShowCourseForm(false);
     setEditingCourse(null);
   };
+
+  // Find selected objects for dropdowns
+  const selectedGroupObj = courseGroups.find(g => g.group_id === Number(selectedCourseGroup));
+  const selectedModuleObj = modules.find(m => m.module_id === Number(selectedModule));
+  const selectedModuleTypeObj = moduleTypes.find(t => t.module_type_id === Number(selectedModuleType));
 
   return (
     <div className="dashboard-container">
@@ -161,6 +168,7 @@ function Dashboard() {
                     <button onClick={() => handleEditCourse(course)} className="btn btn-sm btn-secondary mr-2">
                       Edit
                     </button>
+                    
                     <button onClick={() => handleDeleteCourse(course.course_id)} className="btn btn-sm btn-danger">
                       Delete
                     </button>
@@ -172,47 +180,58 @@ function Dashboard() {
         )}
       </section>
 
-      {/* Course Groups */}
+      {/* Course Groups Dropdown */}
       <section className="dashboard-section">
         <h2>Course Groups</h2>
-        {courseGroups.length === 0 ? (
-          <p>No course groups found.</p>
-        ) : (
-          <ul>
-            {courseGroups.map((group, index) => (
-              <li key={group.group_id || index}>{group.group_name}</li>
-            ))}
-          </ul>
+        <select value={selectedCourseGroup} onChange={e => setSelectedCourseGroup(e.target.value)}>
+          <option value="">Select Course Group</option>
+          {courseGroups.map(group => (
+            <option key={group.group_id} value={group.group_id}>
+              {group.group_name}
+            </option>
+          ))}
+        </select>
+        {selectedGroupObj && (
+          <div className="detail-card">
+            <p><b>Group Name:</b> {selectedGroupObj.group_name}</p>
+          </div>
         )}
       </section>
 
-      {/* Modules */}
+      {/* Modules Dropdown */}
       <section className="dashboard-section">
         <h2>Modules</h2>
-        {modules.length === 0 ? (
-          <p>No modules found.</p>
-        ) : (
-          <ul>
-            {modules.map((module) => (
-              <li key={module.module_id || module.id || module.moduleId}>
-                {module.module_name} (Course: {module.course_name})
-              </li>
-            ))}
-          </ul>
+        <select value={selectedModule} onChange={e => setSelectedModule(e.target.value)}>
+          <option value="">Select Module</option>
+          {modules.map(module => (
+            <option key={module.module_id} value={module.module_id}>
+              {module.module_name}
+            </option>
+          ))}
+        </select>
+        {selectedModuleObj && (
+          <div className="detail-card">
+            <p><b>Module Name:</b> {selectedModuleObj.module_name}</p>
+            <p><b>Course:</b> {selectedModuleObj.course_name}</p>
+          </div>
         )}
       </section>
 
-      {/* Module Types */}
+      {/* Module Types Dropdown */}
       <section className="dashboard-section">
         <h2>Module Types</h2>
-        {moduleTypes.length === 0 ? (
-          <p>No module types found.</p>
-        ) : (
-          <ul>
-            {moduleTypes.map((type, index) => (
-              <li key={type.module_type_id || index}>{type.module_type_name}</li>
-            ))}
-          </ul>
+        <select value={selectedModuleType} onChange={e => setSelectedModuleType(e.target.value)}>
+          <option value="">Select Module Type</option>
+          {moduleTypes.map(type => (
+            <option key={type.module_type_id} value={type.module_type_id}>
+              {type.module_type_name}
+            </option>
+          ))}
+        </select>
+        {selectedModuleTypeObj && (
+          <div className="detail-card">
+            <p><b>Module Type Name:</b> {selectedModuleTypeObj.module_type_name}</p>
+          </div>
         )}
       </section>
 
@@ -222,69 +241,44 @@ function Dashboard() {
         {activeFeedbacks.length === 0 ? (
           <p>No active feedback schedules.</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Teacher</th>
-                <th>Module</th>
-                <th>Module Type</th>
-                <th>Group</th>
-                <th>Course</th>
-                <th>Start Time</th>
-                <th>End Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activeFeedbacks.map((fb, idx) => (
-                <tr key={idx}>
-                  <td>{fb.first_name} {fb.last_name}</td>
-                  <td>{fb.module_name}</td>
-                  <td>{fb.module_type_name}</td>
-                  <td>{fb.group_name}</td>
-                  <td>{fb.course_name}</td>
-                  <td>{new Date(fb.start_time).toLocaleString()}</td>
-                  <td>{new Date(fb.end_time).toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="feedback-cards">
+            {activeFeedbacks.map((fb, idx) => (
+              <div key={idx} className="feedback-detail-card">
+                <p><b>Teacher:</b> {fb.first_name} {fb.last_name}</p>
+                <p><b>Module:</b> {fb.module_name}</p>
+                <p><b>Module Type:</b> {fb.module_type_name}</p>
+                <p><b>Group:</b> {fb.group_name}</p>
+                <p><b>Course:</b> {fb.course_name}</p>
+                <p><b>Start Time:</b> {parseMySqlDateTime(fb.start_time).toLocaleString()}</p>
+                <p><b>End Time:</b> {parseMySqlDateTime(fb.end_time).toLocaleString()}</p>
+              </div>
+            ))}
+          </div>
         )}
       </section>
 
       {/* Feedback Schedules Inactive */}
-      <section className="dashboard-section">
-        <h2>Feedback Schedules - Inactive</h2>
-        {inactiveFeedbacks.length === 0 ? (
-          <p>No inactive feedback schedules.</p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Teacher</th>
-                <th>Module</th>
-                <th>Module Type</th>
-                <th>Group</th>
-                <th>Course</th>
-                <th>Start Time</th>
-                <th>End Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              {inactiveFeedbacks.map((fb, idx) => (
-                <tr key={idx}>
-                  <td>{fb.first_name} {fb.last_name}</td>
-                  <td>{fb.module_name}</td>
-                  <td>{fb.module_type_name}</td>
-                  <td>{fb.group_name}</td>
-                  <td>{fb.course_name}</td>
-                  <td>{new Date(fb.start_time).toLocaleString()}</td>
-                  <td>{new Date(fb.end_time).toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+     <section className="dashboard-section">
+  <h2>Feedback Schedules - Inactive</h2>
+  {inactiveFeedbacks.length === 0 ? (
+    <p>No inactive feedback schedules.</p>
+  ) : (
+    <div className="feedback-cards"> {/* Make sure this div has this class */}
+      {inactiveFeedbacks.map((fb, idx) => (
+        <div key={idx} className="feedback-detail-card">
+          <p><b>Teacher:</b> {fb.first_name} {fb.last_name}</p>
+          <p><b>Module:</b> {fb.module_name}</p>
+          <p><b>Module Type:</b> {fb.module_type_name}</p>
+          <p><b>Group:</b> {fb.group_name}</p>
+          <p><b>Course:</b> {fb.course_name}</p>
+          <p><b>Start Time:</b> {parseMySqlDateTime(fb.start_time).toLocaleString()}</p>
+          <p><b>End Time:</b> {parseMySqlDateTime(fb.end_time).toLocaleString()}</p>
+        </div>
+      ))}
+    </div>
+  )}
+</section>
+
     </div>
   );
 }

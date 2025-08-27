@@ -74,6 +74,7 @@ h2 {
 
 .btn-secondary:hover {
   background-color: #5a6268;
+
 }
 
 .btn-danger {
@@ -111,4 +112,31 @@ h2 {
   color: red;
   font-weight: bold;
   margin-bottom: 20px;
+}
+
+.feedback-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.feedback-detail-card {
+  background: #c2dbf4;
+  border-radius: 8px;
+  padding: 18px 20px;
+  margin-bottom: 12px;
+  min-width: 250px;
+  max-width: 350px;
+  box-shadow: 0 1px 6px #0001;
+}
+.feedback-detail-card p {
+  margin: 4px 0;
+  font-size: 15px;
+}
+
+.btn-sm.btn-secondary {
+  margin-right: 10px; /* Adds space after the Edit button */
+}
+
+.btn-sm.btn-danger {
+  margin-left: 0; /* Reset any unwanted margin if needed */
 }
