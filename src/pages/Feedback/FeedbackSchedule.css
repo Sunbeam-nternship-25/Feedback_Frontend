@@ -1,0 +1,106 @@
+/* FeedbackSchedule.css */
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f3f4f6;
+  margin: 0;
+  padding: 0;
+}
+
+/* Form container */
+.input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  max-width: 550px;
+  margin: 3rem auto;
+  padding: 2rem 2.5rem;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Heading */
+.input-container h2 {
+  text-align: center;
+  color: #1e40af;
+  margin-bottom: 0.5rem;
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* Label styling */
+.input-container label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.3rem;
+}
+
+/* Input & Select fields */
+.input-container select,
+.input-container input[type="datetime-local"] {
+  padding: 0.8rem;
+  font-size: 1rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  outline: none;
+  background: #f9fafb;
+  transition: all 0.3s ease-in-out;
+}
+
+.input-container select:focus,
+.input-container input[type="datetime-local"]:focus {
+  border: 1.5px solid #2563eb;
+  background: #ffffff;
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.3);
+}
+
+/* Button */
+button {
+  margin-top: 0.5rem;
+  padding: 0.85rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.3s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, #1e40af, #1e3a8a);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .input-container {
+    padding: 1.5rem;
+    max-width: 90%;
+  }
+
+  .input-container h2 {
+    font-size: 1.4rem;
+  }
+}
