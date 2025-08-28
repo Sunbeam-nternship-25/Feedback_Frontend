@@ -1,12 +1,102 @@
 import React, { useEffect, useState } from "react";
 import StudentNavbar from "../studentNavbar/navbar";
-
+import "./dashboard.css";
+import {
+  activeFeedback,
+  addFeedback,
+  checkFeedback,
+} from "../../service/feedbackSchedule";
+import { getStudentbyId } from "../../service/student";
 
 const StudentDashboard = () => {
- 
+  const [feedbackInfo, setFeedbackInfo] = useState(null);
+  const [formData, setFormData] = useState({
+    q1: "",
+    q2: "",
+    q3: "",
+    q4: "",
+    q5: "",
+    suggestion: "",
+  });
+  const [student, setStudent] = useState(null);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [noSchedule, setNoSchedule] = useState(false);
 
- 
-  
+  useEffect(() => {
+    const fetchStudent = async () => {
+      try {
+        const result = await getStudentbyId();
+        setStudent(result.data);
+      } catch (err) {
+        console.error("Failed to fetch student:", err);
+      }
+    };
+    fetchStudent();
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const result = await activeFeedback();
+
+        if (
+          result.status === "success"
+        ) {
+          console.log(result.data[0])
+          setFeedbackInfo(result.data[0]);
+          
+        } else {
+          setNoSchedule(true);
+        }
+      } catch (error) {
+        console.error("Error fetching feedback info:", error);
+        setNoSchedule(true);
+      }
+    };
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchSubmissionStatus = async () => {
+      try {
+        const result = await checkFeedback();
+        if (result.status === "success" && result.data.submitted) {
+          setHasSubmitted(true);
+        }
+      } catch (err) {
+        console.error("Failed to check feedback status:", err);
+      }
+    };
+    fetchSubmissionStatus();
+  }, []);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const result = await addFeedback(
+        formData.q1,
+        formData.q2,
+        formData.q3,
+        formData.q4,
+        formData.q5,
+        formData.suggestion
+      );
+
+      if (result.status === "success") {
+        alert("Feedback submitted successfully!");
+        setHasSubmitted(true);
+        setFormData({ q1: "", q2: "", q3: "", q4: "", q5: "", suggestion: "" });
+      } else {
+        alert("Error: " + result.error);
+      }
+    } catch (err) {
+      console.error("Error submitting feedback:", err);
+      alert("Error submitting feedback!");
+    }
+  };
 
   return (
     <>
