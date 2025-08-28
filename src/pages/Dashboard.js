@@ -1,93 +1,305 @@
 import React, { useState, useEffect } from "react";
 import api from "../api";
-import CourseForm from "./CourseForm";
 import "./Dashboard.css";
+import {
+  FaUser,
+  FaSchool,
+  FaUsers,
+  FaBook,
+  FaCalendarAlt,
+  FaQuestionCircle,
+  FaRegFileAlt,
+  FaBars,
+  FaClipboardList,
+  FaThList,
+} from "react-icons/fa";
 
-// Helper function to parse MySQL datetime to JS Date safely
-function parseMySqlDateTime(dt) {
-  if (!dt) return "";
-  return new Date(dt.replace(" ", "T"));
+const menu = [
+  { label: "Dashboard", icon: <FaThList /> },
+  { label: "Courses", icon: <FaBook /> },
+  { label: "Groups", icon: <FaSchool /> },
+  { label: "Teachers", icon: <FaUser /> },
+  { label: "Students", icon: <FaUsers /> },
+  { label: "Modules", icon: <FaClipboardList /> },
+  { label: "Module Types", icon: <FaClipboardList /> },
+  { label: "Feedback Schedules", icon: <FaCalendarAlt /> },
+  { label: "Questions", icon: <FaQuestionCircle /> },
+  { label: "Feedback Reports", icon: <FaRegFileAlt /> },
+];
+
+// CourseForm inline for add/edit
+function CourseForm({ initialData, onSubmit, onCancel }) {
+  const [courseName, setCourseName] = useState("");
+
+  useEffect(() => {
+    setCourseName(initialData?.course_name || "");
+  }, [initialData]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!courseName.trim()) return;
+    onSubmit({ course_name: courseName });
+  };
+
+  return (
+    <form className="form" onSubmit={handleSubmit} style={{ marginBottom: 20 }}>
+      <label>
+        Course Name:
+        <input
+          type="text"
+          value={courseName}
+          onChange={(e) => setCourseName(e.target.value)}
+          placeholder="Enter course name"
+          required
+        />
+      </label>
+      <div style={{ marginTop: 8 }}>
+        <button className="btn btn-primary" type="submit">
+          Save
+        </button>
+        <button
+          className="btn btn-secondary"
+          type="button"
+          style={{ marginLeft: 8 }}
+          onClick={onCancel}
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
 }
 
-function Dashboard() {
+// FeedbackScheduleForm for creating new feedback schedules
+function FeedbackScheduleForm({ onSubmit, onCancel, courses, modules, moduleTypes, groups }) {
+  const [teacherName, setTeacherName] = useState("");
+  const [courseId, setCourseId] = useState("");
+  const [moduleId, setModuleId] = useState("");
+  const [moduleTypeId, setModuleTypeId] = useState("");
+  const [groupId, setGroupId] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (
+      !teacherName.trim() ||
+      !courseId ||
+      !moduleId ||
+      !moduleTypeId ||
+      !groupId ||
+      !startTime ||
+      !endTime
+    ) {
+      alert("Please fill all fields.");
+      return;
+    }
+    onSubmit({
+      teacher_name: teacherName,
+      course_id: courseId,
+      module_id: moduleId,
+      module_type_id: moduleTypeId,
+      group_id: groupId,
+      start_time: startTime,
+      end_time: endTime,
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="form" style={{ marginBottom: 20 }}>
+      <label>
+        Teacher Name:
+        <input
+          type="text"
+          value={teacherName}
+          onChange={(e) => setTeacherName(e.target.value)}
+          placeholder="Enter teacher name"
+          required
+        />
+      </label>
+
+      <label>
+        Group:
+        <select value={groupId} onChange={(e) => setGroupId(e.target.value)} required>
+          <option value="">Select group</option>
+          {groups.map((g) => (
+            <option key={g.group_id} value={g.group_id}>
+              {g.group_name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label>
+        Course:
+        <select value={courseId} onChange={(e) => setCourseId(e.target.value)} required>
+          <option value="">Select course</option>
+          {courses.map((c) => (
+            <option key={c.course_id} value={c.course_id}>
+              {c.course_name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label>
+        Module:
+        <select value={moduleId} onChange={(e) => setModuleId(e.target.value)} required>
+          <option value="">Select module</option>
+          {modules.map((m) => (
+            <option key={m.module_id} value={m.module_id}>
+              {m.module_name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label>
+        Module Type:
+        <select value={moduleTypeId} onChange={(e) => setModuleTypeId(e.target.value)} required>
+          <option value="">Select module type</option>
+          {moduleTypes.map((mt) => (
+            <option key={mt.module_type_id} value={mt.module_type_id}>
+              {mt.module_type_name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label>
+        Start Time:
+        <input
+          type="datetime-local"
+          value={startTime}
+          onChange={(e) => setStartTime(e.target.value)}
+          required
+        />
+      </label>
+
+      <label>
+        End Time:
+        <input
+          type="datetime-local"
+          value={endTime}
+          onChange={(e) => setEndTime(e.target.value)}
+          required
+        />
+      </label>
+
+      <div style={{ marginTop: 12 }}>
+        <button type="submit" className="btn btn-primary">
+          Save
+        </button>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          style={{ marginLeft: 8 }}
+          onClick={onCancel}
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+export default function Dashboard() {
+  const [activeSection, setActiveSection] = useState("Courses");
+
   const [courses, setCourses] = useState([]);
-  const [courseGroups, setCourseGroups] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [modules, setModules] = useState([]);
   const [moduleTypes, setModuleTypes] = useState([]);
   const [activeFeedbacks, setActiveFeedbacks] = useState([]);
   const [inactiveFeedbacks, setInactiveFeedbacks] = useState([]);
-  const [error, setError] = useState("");
 
-  // Dropdown selections
-  const [selectedCourseGroup, setSelectedCourseGroup] = useState("");
-  const [selectedModule, setSelectedModule] = useState("");
-  const [selectedModuleType, setSelectedModuleType] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // Course CRUD states
-  const [loadingCourses, setLoadingCourses] = useState(true);
   const [showCourseForm, setShowCourseForm] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null);
 
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+
   useEffect(() => {
-    fetchCourses();
-    fetchCourseGroups();
-    fetchModules();
-    fetchModuleTypes();
-    fetchFeedbacks();
-  }, []);
+    switch (activeSection) {
+      case "Courses":
+        fetchCourses();
+        break;
+      case "Groups":
+        fetchGroups();
+        break;
+      case "Modules":
+        fetchModules();
+        break;
+      case "Module Types":
+        fetchModuleTypes();
+        break;
+      case "Feedback Schedules":
+        fetchFeedbacks();
+        break;
+      default:
+        break;
+    }
+  }, [activeSection]);
 
   const fetchCourses = async () => {
-    setLoadingCourses(true);
+    setLoading(true);
     try {
       const res = await api.get("/course/allCourses");
       setCourses(res.data.data || []);
-      setError("");
     } catch {
-      setError("Failed to fetch courses");
-    } finally {
-      setLoadingCourses(false);
+      setCourses([]);
     }
+    setLoading(false);
   };
 
-  const fetchCourseGroups = async () => {
+  const fetchGroups = async () => {
+    setLoading(true);
     try {
       const res = await api.get("/courseGroup/allCourseGroup");
-      setCourseGroups(res.data.data || []);
+      setGroups(res.data.data || []);
     } catch {
-      setError("Failed to fetch course groups");
+      setGroups([]);
     }
+    setLoading(false);
   };
 
   const fetchModules = async () => {
+    setLoading(true);
     try {
       const res = await api.get("/module/allModules");
       setModules(res.data.data || []);
     } catch {
-      setError("Failed to fetch modules");
+      setModules([]);
     }
+    setLoading(false);
   };
 
   const fetchModuleTypes = async () => {
+    setLoading(true);
     try {
       const res = await api.get("/moduleType/allModulesType");
       setModuleTypes(res.data.data || []);
     } catch {
-      setError("Failed to fetch module types");
+      setModuleTypes([]);
     }
+    setLoading(false);
   };
 
   const fetchFeedbacks = async () => {
+    setLoading(true);
     try {
       const activeRes = await api.get("/feedbackSchedule/activeFeedback");
-      setActiveFeedbacks(activeRes.data.data || []);
       const inactiveRes = await api.get("/feedbackSchedule/deActiveFeedback");
+      setActiveFeedbacks(activeRes.data.data || []);
       setInactiveFeedbacks(inactiveRes.data.data || []);
     } catch {
-      setError("Failed to fetch feedback schedules");
+      setActiveFeedbacks([]);
+      setInactiveFeedbacks([]);
     }
+    setLoading(false);
   };
 
-  // Course CRUD handlers unchanged
   const handleAddCourse = () => {
     setEditingCourse(null);
     setShowCourseForm(true);
@@ -103,6 +315,7 @@ function Dashboard() {
     try {
       await api.delete("/course/deleteCourse", { data: { course_id } });
       fetchCourses();
+      alert("Deleted successfully");
     } catch {
       alert("Failed to delete course");
     }
@@ -123,164 +336,259 @@ function Dashboard() {
     }
   };
 
-  const handleCourseFormCancel = () => {
-    setShowCourseForm(false);
-    setEditingCourse(null);
+  const handleFeedbackFormSubmit = async (formData) => {
+    try {
+      await api.post("/feedbackSchedule/insertFeedback", formData);
+      setShowFeedbackForm(false);
+      fetchFeedbacks();
+      alert("Feedback schedule created successfully.");
+    } catch {
+      alert("Failed to create feedback schedule.");
+    }
   };
 
-  // Find selected objects for dropdowns
-  const selectedGroupObj = courseGroups.find(g => g.group_id === Number(selectedCourseGroup));
-  const selectedModuleObj = modules.find(m => m.module_id === Number(selectedModule));
-  const selectedModuleTypeObj = moduleTypes.find(t => t.module_type_id === Number(selectedModuleType));
-
   return (
-    <div className="dashboard-container">
-      <h1>Admin Dashboard</h1>
+    <div className="admin-root">
+      <div className="sidebar">
+        <div className="sidebar-header">Menu</div>
+        {menu.map((item) => (
+          <div
+            key={item.label}
+            className={`sidebar-item ${activeSection === item.label ? "active" : ""}`}
+            onClick={() => setActiveSection(item.label)}
+          >
+            <span className="sidebar-icon">{item.icon}</span>
+            <span>{item.label}</span>
+          </div>
+        ))}
+      </div>
 
-      {error && <div className="error">{error}</div>}
+      <div className="admin-content">
+        <h1>Admin Dashboard</h1>
 
-      {/* Courses Section */}
-      <section className="dashboard-section">
-        <h2>Courses</h2>
-        {loadingCourses ? (
-          <p>Loading courses...</p>
-        ) : (
-          <>
-            {!showCourseForm && (
-              <button onClick={handleAddCourse} className="btn btn-primary mb-2">
-                Add New Course
-              </button>
-            )}
-
+        {/* Courses Section */}
+        {activeSection === "Courses" && (
+          <div className="admin-table-card">
+            <div className="admin-table-header">
+              <span className="admin-table-title">Course List</span>
+              {!showCourseForm && (
+                <button className="table-btn add-btn" onClick={handleAddCourse}>
+                  Add Course
+                </button>
+              )}
+            </div>
             {showCourseForm && (
               <CourseForm
                 initialData={editingCourse}
                 onSubmit={handleCourseFormSubmit}
-                onCancel={handleCourseFormCancel}
+                onCancel={() => {
+                  setShowCourseForm(false);
+                  setEditingCourse(null);
+                }}
               />
             )}
-
-            <ul className="list">
-              {courses.map((course) => (
-                <li key={course.course_id} className="list-item">
-                  {course.course_name}
-                  <div>
-                    <button onClick={() => handleEditCourse(course)} className="btn btn-sm btn-secondary mr-2">
-                      Edit
-                    </button>
-                    
-                    <button onClick={() => handleDeleteCourse(course.course_id)} className="btn btn-sm btn-danger">
-                      Delete
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </section>
-
-      {/* Course Groups Dropdown */}
-      <section className="dashboard-section">
-        <h2>Course Groups</h2>
-        <select value={selectedCourseGroup} onChange={e => setSelectedCourseGroup(e.target.value)}>
-          <option value="">Select Course Group</option>
-          {courseGroups.map(group => (
-            <option key={group.group_id} value={group.group_id}>
-              {group.group_name}
-            </option>
-          ))}
-        </select>
-        {selectedGroupObj && (
-          <div className="detail-card">
-            <p><b>Group Name:</b> {selectedGroupObj.group_name}</p>
+            <table className="admin-table" cellSpacing="0">
+              <thead>
+                <tr>
+                  <th>Course ID</th>
+                  <th>Course Name</th>
+                  <th>Modules</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="4">Loading...</td>
+                  </tr>
+                ) : (
+                  courses.map((course) => (
+                    <tr key={course.course_id}>
+                      <td>{course.course_id}</td>
+                      <td>{course.course_name}</td>
+                      <td>{course.modules || "-"}</td>
+                      <td>
+                        <button className="table-btn edit-btn" onClick={() => handleEditCourse(course)}>
+                          Edit
+                        </button>
+                        <button
+                          className="table-btn delete-btn"
+                          onClick={() => handleDeleteCourse(course.course_id)}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         )}
-      </section>
 
-      {/* Modules Dropdown */}
-      <section className="dashboard-section">
-        <h2>Modules</h2>
-        <select value={selectedModule} onChange={e => setSelectedModule(e.target.value)}>
-          <option value="">Select Module</option>
-          {modules.map(module => (
-            <option key={module.module_id} value={module.module_id}>
-              {module.module_name}
-            </option>
-          ))}
-        </select>
-        {selectedModuleObj && (
-          <div className="detail-card">
-            <p><b>Module Name:</b> {selectedModuleObj.module_name}</p>
-            <p><b>Course:</b> {selectedModuleObj.course_name}</p>
+        {/* Groups Section */}
+        {activeSection === "Groups" && (
+          <div className="admin-table-card">
+            <div className="admin-table-title" style={{ marginBottom: 18 }}>
+              Group List
+            </div>
+            <table className="admin-table" cellSpacing="0">
+              <thead>
+                <tr>
+                  <th>Group ID</th>
+                  <th>Group Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="2">Loading...</td>
+                  </tr>
+                ) : (
+                  groups.map((group) => (
+                    <tr key={group.group_id}>
+                      <td>{group.group_id}</td>
+                      <td>{group.group_name}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         )}
-      </section>
 
-      {/* Module Types Dropdown */}
-      <section className="dashboard-section">
-        <h2>Module Types</h2>
-        <select value={selectedModuleType} onChange={e => setSelectedModuleType(e.target.value)}>
-          <option value="">Select Module Type</option>
-          {moduleTypes.map(type => (
-            <option key={type.module_type_id} value={type.module_type_id}>
-              {type.module_type_name}
-            </option>
-          ))}
-        </select>
-        {selectedModuleTypeObj && (
-          <div className="detail-card">
-            <p><b>Module Type Name:</b> {selectedModuleTypeObj.module_type_name}</p>
+        {/* Modules Section */}
+        {activeSection === "Modules" && (
+          <div className="admin-table-card">
+            <div className="admin-table-title" style={{ marginBottom: 18 }}>
+              Module List
+            </div>
+            <table className="admin-table" cellSpacing="0">
+              <thead>
+                <tr>
+                  <th>Module ID</th>
+                  <th>Module Name</th>
+                  <th>Course Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="3">Loading...</td>
+                  </tr>
+                ) : (
+                  modules.map((module) => (
+                    <tr key={module.module_id}>
+                      <td>{module.module_id}</td>
+                      <td>{module.module_name}</td>
+                      <td>{module.course_name}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         )}
-      </section>
 
-      {/* Feedback Schedules Active */}
-      <section className="dashboard-section">
-        <h2>Feedback Schedules - Active</h2>
-        {activeFeedbacks.length === 0 ? (
-          <p>No active feedback schedules.</p>
-        ) : (
-          <div className="feedback-cards">
-            {activeFeedbacks.map((fb, idx) => (
-              <div key={idx} className="feedback-detail-card">
-                <p><b>Teacher:</b> {fb.first_name} {fb.last_name}</p>
-                <p><b>Module:</b> {fb.module_name}</p>
-                <p><b>Module Type:</b> {fb.module_type_name}</p>
-                <p><b>Group:</b> {fb.group_name}</p>
-                <p><b>Course:</b> {fb.course_name}</p>
-                <p><b>Start Time:</b> {parseMySqlDateTime(fb.start_time).toLocaleString()}</p>
-                <p><b>End Time:</b> {parseMySqlDateTime(fb.end_time).toLocaleString()}</p>
-              </div>
-            ))}
+        {/* Module Types Section */}
+        {activeSection === "Module Types" && (
+          <div className="admin-table-card">
+            <div className="admin-table-title" style={{ marginBottom: 18 }}>
+              Module Types List
+            </div>
+            <table className="admin-table" cellSpacing="0">
+              <thead>
+                <tr>
+                  <th>Module Type ID</th>
+                  <th>Module Type Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="2">Loading...</td>
+                  </tr>
+                ) : (
+                  moduleTypes.map((mt) => (
+                    <tr key={mt.module_type_id}>
+                      <td>{mt.module_type_id}</td>
+                      <td>{mt.module_type_name}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         )}
-      </section>
 
-      {/* Feedback Schedules Inactive */}
-     <section className="dashboard-section">
-  <h2>Feedback Schedules - Inactive</h2>
-  {inactiveFeedbacks.length === 0 ? (
-    <p>No inactive feedback schedules.</p>
-  ) : (
-    <div className="feedback-cards"> {/* Make sure this div has this class */}
-      {inactiveFeedbacks.map((fb, idx) => (
-        <div key={idx} className="feedback-detail-card">
-          <p><b>Teacher:</b> {fb.first_name} {fb.last_name}</p>
-          <p><b>Module:</b> {fb.module_name}</p>
-          <p><b>Module Type:</b> {fb.module_type_name}</p>
-          <p><b>Group:</b> {fb.group_name}</p>
-          <p><b>Course:</b> {fb.course_name}</p>
-          <p><b>Start Time:</b> {parseMySqlDateTime(fb.start_time).toLocaleString()}</p>
-          <p><b>End Time:</b> {parseMySqlDateTime(fb.end_time).toLocaleString()}</p>
-        </div>
-      ))}
-    </div>
-  )}
-</section>
+        {/* Feedback Schedules Section */}
+        {activeSection === "Feedback Schedules" && (
+          <div>
+            {!showFeedbackForm && (
+              <>
+                <button
+                  className="table-btn add-btn"
+                  onClick={() => setShowFeedbackForm(true)}
+                  style={{ marginBottom: 20 }}
+                >
+                  Create Feedback Schedule
+                </button>
 
+                <div style={{ marginBottom: 20 }}>
+                  <strong>Active Feedback Schedules</strong>
+                  {loading && <p>Loading...</p>}
+                  {!loading && (
+                    <ul>
+                      {activeFeedbacks.length === 0 ? (
+                        <p>No active feedback schedules.</p>
+                      ) : (
+                        activeFeedbacks.map((fb, i) => (
+                          <li key={i}>
+                            {fb.teacher_name || `${fb.first_name} ${fb.last_name}`} - {fb.module_name} (
+                            {fb.course_name}) [From {new Date(fb.start_time).toLocaleString()} to{" "}
+                            {new Date(fb.end_time).toLocaleString()}]
+                          </li>
+                        ))
+                      )}
+                    </ul>
+                  )}
+                </div>
+
+                <div>
+                  <strong>Inactive Feedback Schedules</strong>
+                  {loading && <p>Loading...</p>}
+                  {!loading && (
+                    <ul>
+                      {inactiveFeedbacks.length === 0 ? (
+                        <p>No inactive feedback schedules.</p>
+                      ) : (
+                        inactiveFeedbacks.map((fb, i) => (
+                          <li key={i}>
+                            {fb.teacher_name || `${fb.first_name} ${fb.last_name}`} - {fb.module_name} (
+                            {fb.course_name}) [From {new Date(fb.start_time).toLocaleString()} to{" "}
+                            {new Date(fb.end_time).toLocaleString()}]
+                          </li>
+                        ))
+                      )}
+                    </ul>
+                  )}
+                </div>
+              </>
+            )}
+
+            {showFeedbackForm && (
+              <FeedbackScheduleForm
+                onSubmit={handleFeedbackFormSubmit}
+                onCancel={() => setShowFeedbackForm(false)}
+                courses={courses}
+                modules={modules}
+                moduleTypes={moduleTypes}
+                groups={groups}
+              />
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
-
-export default Dashboard;
