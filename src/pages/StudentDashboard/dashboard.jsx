@@ -10,9 +10,26 @@ const StudentDashboard = () => {
 
   return (
     <>
-      
+      <StudentNavbar />
       <div className="container">
-        
+        <div className="user-profile">
+          <h2>User Profile</h2>
+          {student ? (
+            <>
+              <p>
+                <strong>Name:</strong> {student.first_name} {student.last_name}
+              </p>
+              <p>
+                <strong>PRN:</strong> {student.prn_no}
+              </p>
+              <p>
+                <strong>Email:</strong> {student.email}
+              </p>
+            </>
+          ) : (
+            <p>Loading student info...</p>
+          )}
+        </div>
 
         <h2>Feedback</h2>
 
