@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import api from "../api";
 import "./Dashboard.css";
+import CourseForm from "./CourseForm";
+
 import {
   FaUser,
   FaSchool,
@@ -9,7 +11,6 @@ import {
   FaCalendarAlt,
   FaQuestionCircle,
   FaRegFileAlt,
-  FaBars,
   FaClipboardList,
   FaThList,
 } from "react-icons/fa";
@@ -27,50 +28,12 @@ const menu = [
   { label: "Feedback Reports", icon: <FaRegFileAlt /> },
 ];
 
-// CourseForm inline for add/edit
-function CourseForm({ initialData, onSubmit, onCancel }) {
-  const [courseName, setCourseName] = useState("");
-
-  useEffect(() => {
-    setCourseName(initialData?.course_name || "");
-  }, [initialData]);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!courseName.trim()) return;
-    onSubmit({ course_name: courseName });
-  };
-
-  return (
-    <form className="form" onSubmit={handleSubmit} style={{ marginBottom: 20 }}>
-      <label>
-        Course Name:
-        <input
-          type="text"
-          value={courseName}
-          onChange={(e) => setCourseName(e.target.value)}
-          placeholder="Enter course name"
-          required
-        />
-      </label>
-      <div style={{ marginTop: 8 }}>
-        <button className="btn btn-primary" type="submit">
-          Save
-        </button>
-        <button
-          className="btn btn-secondary"
-          type="button"
-          style={{ marginLeft: 8 }}
-          onClick={onCancel}
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
-  );
+// Util to format datetime-local to 'YYYY-MM-DD HH:mm:ss'
+function formatDateTime(dtLocal) {
+  if (!dtLocal) return "";
+  return dtLocal.replace("T", " ") + ":00";
 }
 
-// FeedbackScheduleForm for creating new feedback schedules
 function FeedbackScheduleForm({ onSubmit, onCancel, courses, modules, moduleTypes, groups }) {
   const [teacherName, setTeacherName] = useState("");
   const [courseId, setCourseId] = useState("");
@@ -94,26 +57,27 @@ function FeedbackScheduleForm({ onSubmit, onCancel, courses, modules, moduleType
       alert("Please fill all fields.");
       return;
     }
+
     onSubmit({
-      teacher_name: teacherName,
-      course_id: courseId,
-      module_id: moduleId,
-      module_type_id: moduleTypeId,
-      group_id: groupId,
-      start_time: startTime,
-      end_time: endTime,
+      teacher_id: Number(teacherName),
+      course_id: Number(courseId),
+      module_id: Number(moduleId),
+      module_type_id: Number(moduleTypeId),
+      group_id: Number(groupId),
+      start_time: formatDateTime(startTime),
+      end_time: formatDateTime(endTime),
     });
   };
 
   return (
     <form onSubmit={handleSubmit} className="form" style={{ marginBottom: 20 }}>
       <label>
-        Teacher Name:
+        Teacher ID:
         <input
-          type="text"
+          type="number"
           value={teacherName}
           onChange={(e) => setTeacherName(e.target.value)}
-          placeholder="Enter teacher name"
+          placeholder="Enter teacher ID"
           required
         />
       </label>
@@ -190,12 +154,7 @@ function FeedbackScheduleForm({ onSubmit, onCancel, courses, modules, moduleType
         <button type="submit" className="btn btn-primary">
           Save
         </button>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          style={{ marginLeft: 8 }}
-          onClick={onCancel}
-        >
+        <button type="button" className="btn btn-secondary" style={{ marginLeft: 8 }} onClick={onCancel}>
           Cancel
         </button>
       </div>
@@ -210,6 +169,7 @@ export default function Dashboard() {
   const [groups, setGroups] = useState([]);
   const [modules, setModules] = useState([]);
   const [moduleTypes, setModuleTypes] = useState([]);
+
   const [activeFeedbacks, setActiveFeedbacks] = useState([]);
   const [inactiveFeedbacks, setInactiveFeedbacks] = useState([]);
 
@@ -324,7 +284,7 @@ export default function Dashboard() {
   const handleCourseFormSubmit = async (formData) => {
     try {
       if (editingCourse) {
-        await api.put("/course/updateCourse", { course_id: editingCourse.course_id, ...formData });
+        await api.put("/course/updateCourse", { course_id: editingCourse.id, ...formData });
       } else {
         await api.post("/course/insertCourse", formData);
       }
@@ -332,18 +292,26 @@ export default function Dashboard() {
       setEditingCourse(null);
       fetchCourses();
     } catch {
-      alert("Failed to save course");
+      alert("Failed to save");
     }
   };
 
-  const handleFeedbackFormSubmit = async (formData) => {
+  const handleFeedbackSubmit = async (formData) => {
     try {
-      await api.post("/feedbackSchedule/insertFeedback", formData);
+      await api.post("/feedbackSchedule/createFeedback", {
+        ...formData,
+        teacher_id: Number(formData.teacher_id),
+        course_id: Number(formData.course_id),
+        module_id: Number(formData.module_id),
+        module_type_id: Number(formData.module_type_id),
+        group_id: Number(formData.group_id),
+      });
+      alert("Feedback created successfully");
       setShowFeedbackForm(false);
       fetchFeedbacks();
-      alert("Feedback schedule created successfully.");
-    } catch {
-      alert("Failed to create feedback schedule.");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to create feedback");
     }
   };
 
@@ -366,7 +334,6 @@ export default function Dashboard() {
       <div className="admin-content">
         <h1>Admin Dashboard</h1>
 
-        {/* Courses Section */}
         {activeSection === "Courses" && (
           <div className="admin-table-card">
             <div className="admin-table-header">
@@ -377,6 +344,7 @@ export default function Dashboard() {
                 </button>
               )}
             </div>
+
             {showCourseForm && (
               <CourseForm
                 initialData={editingCourse}
@@ -387,6 +355,7 @@ export default function Dashboard() {
                 }}
               />
             )}
+
             <table className="admin-table" cellSpacing="0">
               <thead>
                 <tr>
@@ -396,16 +365,17 @@ export default function Dashboard() {
                   <th>Actions</th>
                 </tr>
               </thead>
+
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="4">Loading...</td>
+                    <td colSpan={4}>Loading...</td>
                   </tr>
                 ) : (
                   courses.map((course) => (
-                    <tr key={course.course_id}>
-                      <td>{course.course_id}</td>
-                      <td>{course.course_name}</td>
+                    <tr key={course.id || course.course_id}>
+                      <td>{course.id || course.course_id}</td>
+                      <td>{course.name || course.course_name}</td>
                       <td>{course.modules || "-"}</td>
                       <td>
                         <button className="table-btn edit-btn" onClick={() => handleEditCourse(course)}>
@@ -413,7 +383,7 @@ export default function Dashboard() {
                         </button>
                         <button
                           className="table-btn delete-btn"
-                          onClick={() => handleDeleteCourse(course.course_id)}
+                          onClick={() => handleDeleteCourse(course.id || course.course_id)}
                         >
                           Delete
                         </button>
@@ -426,12 +396,12 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Groups Section */}
         {activeSection === "Groups" && (
           <div className="admin-table-card">
             <div className="admin-table-title" style={{ marginBottom: 18 }}>
               Group List
             </div>
+
             <table className="admin-table" cellSpacing="0">
               <thead>
                 <tr>
@@ -439,10 +409,11 @@ export default function Dashboard() {
                   <th>Group Name</th>
                 </tr>
               </thead>
+
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="2">Loading...</td>
+                    <td colSpan={2}>Loading...</td>
                   </tr>
                 ) : (
                   groups.map((group) => (
@@ -457,12 +428,12 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Modules Section */}
         {activeSection === "Modules" && (
           <div className="admin-table-card">
             <div className="admin-table-title" style={{ marginBottom: 18 }}>
               Module List
             </div>
+
             <table className="admin-table" cellSpacing="0">
               <thead>
                 <tr>
@@ -471,10 +442,11 @@ export default function Dashboard() {
                   <th>Course Name</th>
                 </tr>
               </thead>
+
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="3">Loading...</td>
+                    <td colSpan={3}>Loading...</td>
                   </tr>
                 ) : (
                   modules.map((module) => (
@@ -490,12 +462,12 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Module Types Section */}
         {activeSection === "Module Types" && (
           <div className="admin-table-card">
             <div className="admin-table-title" style={{ marginBottom: 18 }}>
               Module Types List
             </div>
+
             <table className="admin-table" cellSpacing="0">
               <thead>
                 <tr>
@@ -503,10 +475,11 @@ export default function Dashboard() {
                   <th>Module Type Name</th>
                 </tr>
               </thead>
+
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="2">Loading...</td>
+                    <td colSpan={2}>Loading...</td>
                   </tr>
                 ) : (
                   moduleTypes.map((mt) => (
@@ -521,7 +494,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Feedback Schedules Section */}
         {activeSection === "Feedback Schedules" && (
           <div>
             {!showFeedbackForm && (
@@ -535,7 +507,7 @@ export default function Dashboard() {
                 </button>
 
                 <div style={{ marginBottom: 20 }}>
-                  <strong>Active Feedback Schedules</strong>
+                  <strong>Active Feedbacks</strong>
                   {loading && <p>Loading...</p>}
                   {!loading && (
                     <ul>
@@ -554,8 +526,8 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                <div>
-                  <strong>Inactive Feedback Schedules</strong>
+                <div style={{ marginTop: 20 }}>
+                  <strong>Inactive Feedbacks</strong>
                   {loading && <p>Loading...</p>}
                   {!loading && (
                     <ul>
@@ -578,7 +550,7 @@ export default function Dashboard() {
 
             {showFeedbackForm && (
               <FeedbackScheduleForm
-                onSubmit={handleFeedbackFormSubmit}
+                onSubmit={handleFeedbackSubmit}
                 onCancel={() => setShowFeedbackForm(false)}
                 courses={courses}
                 modules={modules}
