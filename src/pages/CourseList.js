@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import api from "../api";
-import CourseForm from "./CourseForm";
+//import CourseForm from "./CourseForm";
+import CourseForm from "./courseForm";
 
 function CourseList() {
   const [courses, setCourses] = useState([]);
