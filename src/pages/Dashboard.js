@@ -173,6 +173,12 @@ export default function Dashboard() {
   const [activeFeedbacks, setActiveFeedbacks] = useState([]);
   const [inactiveFeedbacks, setInactiveFeedbacks] = useState([]);
 
+  const [studentCount, setStudentCount] = useState(0);
+  const [students, setStudents] = useState([]);
+
+  const [teacherCount, setTeacherCount] = useState(0);
+  const [teachers, setTeachers] = useState([]);
+
   const [loading, setLoading] = useState(false);
 
   const [showCourseForm, setShowCourseForm] = useState(false);
@@ -196,6 +202,14 @@ export default function Dashboard() {
         break;
       case "Feedback Schedules":
         fetchFeedbacks();
+        break;
+      case "Students":
+        fetchStudents();
+        fetchStudentCount();
+        break;
+      case "Teachers":
+        fetchTeachers();
+        fetchTeacherCount();
         break;
       default:
         break;
@@ -258,6 +272,42 @@ export default function Dashboard() {
       setInactiveFeedbacks([]);
     }
     setLoading(false);
+  };
+
+  const fetchStudentCount = async () => {
+    try {
+      const res = await api.get("/student/studentCount");
+      setStudentCount(res.data.data.count || 0);
+    } catch {
+      setStudentCount(0);
+    }
+  };
+
+  const fetchStudents = async () => {
+    try {
+      const res = await api.get("/student/allStudents");
+      setStudents(res.data.data || []);
+    } catch {
+      setStudents([]);
+    }
+  };
+
+  const fetchTeacherCount = async () => {
+    try {
+      const res = await api.get("/teacher/teacherCount");
+      setTeacherCount(res.data.data.count || 0);
+    } catch {
+      setTeacherCount(0);
+    }
+  };
+
+  const fetchTeachers = async () => {
+    try {
+      const res = await api.get("/teacher/allTeachers");
+      setTeachers(res.data.data || []);
+    } catch {
+      setTeachers([]);
+    }
   };
 
   const handleAddCourse = () => {
@@ -558,6 +608,84 @@ export default function Dashboard() {
                 groups={groups}
               />
             )}
+          </div>
+        )}
+
+        {activeSection === "Students" && (
+          <div className="admin-table-card">
+            <div className="admin-table-title" style={{ marginBottom: 18 }}>
+              Students - Total: {studentCount}
+            </div>
+
+            <table className="admin-table" cellSpacing="0">
+              <thead>
+                <tr>
+                  <th>Student ID</th>
+                  <th>First Name</th>
+                  <th>Last Name</th>
+                  <th>Email</th>
+                  <th>PRN No</th>
+                  <th>Group ID</th>
+                  <th>Course Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                {students.length === 0 ? (
+                  <tr>
+                    <td colSpan={7}>No students found.</td>
+                  </tr>
+                ) : (
+                  students.map((student) => (
+                    <tr key={student.student_id}>
+                      <td>{student.student_id}</td>
+                      <td>{student.first_name}</td>
+                      <td>{student.last_name}</td>
+                      <td>{student.email}</td>
+                      <td>{student.prn_no}</td>
+                      <td>{student.group_id}</td>
+                      <td>{student.course_name || "-"}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {activeSection === "Teachers" && (
+          <div className="admin-table-card">
+            <div className="admin-table-title" style={{ marginBottom: 18 }}>
+              Teachers - Total: {teacherCount}
+            </div>
+
+            <table className="admin-table" cellSpacing="0">
+              <thead>
+                <tr>
+                  <th>Teacher ID</th>
+                  <th>First Name</th>
+                  <th>Last Name</th>
+                  <th>Email</th>
+                 
+                </tr>
+              </thead>
+              <tbody>
+                {teachers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6}>No teachers found.</td>
+                  </tr>
+                ) : (
+                  teachers.map((teacher) => (
+                    <tr key={teacher.teacher_id}>
+                      <td>{teacher.teacher_id}</td>
+                      <td>{teacher.first_name}</td>
+                      <td>{teacher.last_name}</td>
+                      <td>{teacher.email || "-"}</td>
+                      
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
