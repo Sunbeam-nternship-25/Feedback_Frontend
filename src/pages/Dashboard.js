@@ -34,8 +34,8 @@ function formatDateTime(dtLocal) {
   return dtLocal.replace("T", " ") + ":00";
 }
 
-function FeedbackScheduleForm({ onSubmit, onCancel, courses, modules, moduleTypes, groups }) {
-  const [teacherName, setTeacherName] = useState("");
+function FeedbackScheduleForm({ onSubmit, onCancel, courses, modules, moduleTypes, groups, teachers }) {
+  const [teacherId, setTeacherId] = useState("");
   const [courseId, setCourseId] = useState("");
   const [moduleId, setModuleId] = useState("");
   const [moduleTypeId, setModuleTypeId] = useState("");
@@ -45,21 +45,13 @@ function FeedbackScheduleForm({ onSubmit, onCancel, courses, modules, moduleType
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (
-      !teacherName.trim() ||
-      !courseId ||
-      !moduleId ||
-      !moduleTypeId ||
-      !groupId ||
-      !startTime ||
-      !endTime
-    ) {
+    if (!teacherId || !courseId || !moduleId || !moduleTypeId || !groupId || !startTime || !endTime) {
       alert("Please fill all fields.");
       return;
     }
 
     onSubmit({
-      teacher_id: Number(teacherName),
+      teacher_id: Number(teacherId),
       course_id: Number(courseId),
       module_id: Number(moduleId),
       module_type_id: Number(moduleTypeId),
@@ -72,14 +64,15 @@ function FeedbackScheduleForm({ onSubmit, onCancel, courses, modules, moduleType
   return (
     <form onSubmit={handleSubmit} className="form" style={{ marginBottom: 20 }}>
       <label>
-        Teacher ID:
-        <input
-          type="number"
-          value={teacherName}
-          onChange={(e) => setTeacherName(e.target.value)}
-          placeholder="Enter teacher ID"
-          required
-        />
+        Teacher:
+        <select value={teacherId} onChange={(e) => setTeacherId(e.target.value)} required>
+          <option value="">Select teacher</option>
+          {teachers.map((t) => (
+            <option key={t.teacher_id} value={t.teacher_id}>
+              {t.teacher_name}
+            </option>
+          ))}
+        </select>
       </label>
 
       <label>
@@ -151,9 +144,7 @@ function FeedbackScheduleForm({ onSubmit, onCancel, courses, modules, moduleType
       </label>
 
       <div style={{ marginTop: 12 }}>
-        <button type="submit" className="btn btn-primary">
-          Save
-        </button>
+        <button type="submit" className="btn btn-primary">Save</button>
         <button type="button" className="btn btn-secondary" style={{ marginLeft: 8 }} onClick={onCancel}>
           Cancel
         </button>
@@ -169,6 +160,7 @@ export default function Dashboard() {
   const [groups, setGroups] = useState([]);
   const [modules, setModules] = useState([]);
   const [moduleTypes, setModuleTypes] = useState([]);
+  const [teachers, setTeachers] = useState([]);
 
   const [activeFeedbacks, setActiveFeedbacks] = useState([]);
   const [inactiveFeedbacks, setInactiveFeedbacks] = useState([]);
@@ -194,8 +186,16 @@ export default function Dashboard() {
       case "Module Types":
         fetchModuleTypes();
         break;
+      case "Teachers":
+        fetchTeachers();
+        break;
       case "Feedback Schedules":
         fetchFeedbacks();
+        fetchCourses();
+        fetchGroups();
+        fetchModules();
+        fetchModuleTypes();
+        fetchTeachers();
         break;
       default:
         break;
@@ -242,6 +242,17 @@ export default function Dashboard() {
       setModuleTypes(res.data.data || []);
     } catch {
       setModuleTypes([]);
+    }
+    setLoading(false);
+  };
+
+  const fetchTeachers = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/teacher_name");
+      setTeachers(res.data.data || []);
+    } catch {
+      setTeachers([]);
     }
     setLoading(false);
   };
@@ -368,9 +379,7 @@ export default function Dashboard() {
 
               <tbody>
                 {loading ? (
-                  <tr>
-                    <td colSpan={4}>Loading...</td>
-                  </tr>
+                  <tr><td colSpan={4}>Loading...</td></tr>
                 ) : (
                   courses.map((course) => (
                     <tr key={course.id || course.course_id}>
@@ -378,9 +387,7 @@ export default function Dashboard() {
                       <td>{course.name || course.course_name}</td>
                       <td>{course.modules || "-"}</td>
                       <td>
-                        <button className="table-btn edit-btn" onClick={() => handleEditCourse(course)}>
-                          Edit
-                        </button>
+                        <button className="table-btn edit-btn" onClick={() => handleEditCourse(course)}>Edit</button>
                         <button
                           className="table-btn delete-btn"
                           onClick={() => handleDeleteCourse(course.id || course.course_id)}
@@ -398,10 +405,7 @@ export default function Dashboard() {
 
         {activeSection === "Groups" && (
           <div className="admin-table-card">
-            <div className="admin-table-title" style={{ marginBottom: 18 }}>
-              Group List
-            </div>
-
+            <div className="admin-table-title" style={{ marginBottom: 18 }}>Group List</div>
             <table className="admin-table" cellSpacing="0">
               <thead>
                 <tr>
@@ -409,12 +413,9 @@ export default function Dashboard() {
                   <th>Group Name</th>
                 </tr>
               </thead>
-
               <tbody>
                 {loading ? (
-                  <tr>
-                    <td colSpan={2}>Loading...</td>
-                  </tr>
+                  <tr><td colSpan={2}>Loading...</td></tr>
                 ) : (
                   groups.map((group) => (
                     <tr key={group.group_id}>
@@ -430,10 +431,7 @@ export default function Dashboard() {
 
         {activeSection === "Modules" && (
           <div className="admin-table-card">
-            <div className="admin-table-title" style={{ marginBottom: 18 }}>
-              Module List
-            </div>
-
+            <div className="admin-table-title" style={{ marginBottom: 18 }}>Module List</div>
             <table className="admin-table" cellSpacing="0">
               <thead>
                 <tr>
@@ -442,12 +440,9 @@ export default function Dashboard() {
                   <th>Course Name</th>
                 </tr>
               </thead>
-
               <tbody>
                 {loading ? (
-                  <tr>
-                    <td colSpan={3}>Loading...</td>
-                  </tr>
+                  <tr><td colSpan={3}>Loading...</td></tr>
                 ) : (
                   modules.map((module) => (
                     <tr key={module.module_id}>
@@ -464,10 +459,7 @@ export default function Dashboard() {
 
         {activeSection === "Module Types" && (
           <div className="admin-table-card">
-            <div className="admin-table-title" style={{ marginBottom: 18 }}>
-              Module Types List
-            </div>
-
+            <div className="admin-table-title" style={{ marginBottom: 18 }}>Module Types List</div>
             <table className="admin-table" cellSpacing="0">
               <thead>
                 <tr>
@@ -475,17 +467,42 @@ export default function Dashboard() {
                   <th>Module Type Name</th>
                 </tr>
               </thead>
-
               <tbody>
                 {loading ? (
-                  <tr>
-                    <td colSpan={2}>Loading...</td>
-                  </tr>
+                  <tr><td colSpan={2}>Loading...</td></tr>
                 ) : (
                   moduleTypes.map((mt) => (
                     <tr key={mt.module_type_id}>
                       <td>{mt.module_type_id}</td>
                       <td>{mt.module_type_name}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {activeSection === "Teachers" && (
+          <div className="admin-table-card">
+            <div className="admin-table-title" style={{ marginBottom: 18 }}>Teacher List</div>
+            <table className="admin-table" cellSpacing="0">
+              <thead>
+                <tr>
+                  <th>Teacher ID</th>
+                  <th>Teacher Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={2}>Loading...</td></tr>
+                ) : teachers.length === 0 ? (
+                  <tr><td colSpan={2}>No teachers found</td></tr>
+                ) : (
+                  teachers.map((t) => (
+                    <tr key={t.teacher_id}>
+                      <td>{t.teacher_id}</td>
+                      <td>{t.teacher_name}</td>
                     </tr>
                   ))
                 )}
@@ -556,6 +573,7 @@ export default function Dashboard() {
                 modules={modules}
                 moduleTypes={moduleTypes}
                 groups={groups}
+                teachers={teachers}
               />
             )}
           </div>
