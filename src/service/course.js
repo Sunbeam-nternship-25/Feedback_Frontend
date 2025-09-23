@@ -13,7 +13,7 @@ export async function getCourses() {
   try {
     const url = `${config.cocoServerBaseURL}/course/courses`;
     const response = await axios.get(url);
-    return response.data;
+    return response.data; // { status: 'success', data: [...] }
   } catch (err) {
     return { status: "error", error: err.message };
   }
