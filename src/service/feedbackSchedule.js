@@ -5,7 +5,7 @@ const BASE_URL = "http://localhost:4003/feedbackSchedule";
 
 // Create new schedule (default export)
 const createFeedback = (data) => {
-  return axios.post(`${BASE_URL}/createFeedback`, data);
+  return axios.post(`${BASE_URL}/createfeedback`, data);
 };
 export default createFeedback;
 
