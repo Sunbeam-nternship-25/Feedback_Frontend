@@ -6,7 +6,6 @@ import TeacherDashboard from './pages/TeacherDashboard.js';
 
 import './App.css';
 
-
 function App() {
   return (
     <Router>

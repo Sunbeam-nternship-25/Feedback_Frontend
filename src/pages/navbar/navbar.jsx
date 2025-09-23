@@ -9,6 +9,7 @@ const Navbar = () => {
         <div className="spacer"></div>
         <div className="logo">Online Feedback System</div>
         <ul className="nav-links">
+          <Link className="nav-link" to="/dashboard">Dashboard</Link>
           <li><Link to="/">Student</Link></li>
           <li><Link to="/teacherlogin">Teacher</Link></li>
            <li><Link to="/cocologin">Co-Coordinator</Link></li>
