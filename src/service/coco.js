@@ -19,7 +19,7 @@ export async function login(email,password){
 
 export async function register(first_name,last_name,course_name,email,password){
      try{
-    const response = await axios.post("http://localhost:4003/coco/register", {
+    const response = await axios.post("http://localhost:4003/coco/newRegister", {
         first_name,
         last_name,
         course_name,
