@@ -9,14 +9,11 @@ import {
   FaUsers,
   FaBook,
   FaCalendarAlt,
-  FaQuestionCircle,
-  FaRegFileAlt,
   FaClipboardList,
-  FaThList,
 } from "react-icons/fa";
 
 const menu = [
-  { label: "Dashboard", icon: <FaThList /> },
+  // { label: "Dashboard", icon: <FaThList /> },
   { label: "Courses", icon: <FaBook /> },
   { label: "Groups", icon: <FaSchool /> },
   { label: "Teachers", icon: <FaUser /> },
@@ -24,11 +21,11 @@ const menu = [
   { label: "Modules", icon: <FaClipboardList /> },
   { label: "Module Types", icon: <FaClipboardList /> },
   { label: "Feedback Schedules", icon: <FaCalendarAlt /> },
-  { label: "Questions", icon: <FaQuestionCircle /> },
-  { label: "Feedback Reports", icon: <FaRegFileAlt /> },
+  // { label: "Questions", icon: <FaQuestionCircle /> },
+  // { label: "Feedback Reports", icon: <FaRegFileAlt /> },
 ];
 
-// Util to format datetime-local to 'YYYY-MM-DD HH:mm:ss'
+// Utility function
 function formatDateTime(dtLocal) {
   if (!dtLocal) return "";
   return dtLocal.replace("T", " ") + ":00";
@@ -57,7 +54,6 @@ function FeedbackScheduleForm({ onSubmit, onCancel, courses, modules, moduleType
       alert("Please fill all fields.");
       return;
     }
-
     onSubmit({
       teacher_id: Number(teacherName),
       course_id: Number(courseId),
@@ -81,7 +77,6 @@ function FeedbackScheduleForm({ onSubmit, onCancel, courses, modules, moduleType
           required
         />
       </label>
-
       <label>
         Group:
         <select value={groupId} onChange={(e) => setGroupId(e.target.value)} required>
@@ -93,7 +88,6 @@ function FeedbackScheduleForm({ onSubmit, onCancel, courses, modules, moduleType
           ))}
         </select>
       </label>
-
       <label>
         Course:
         <select value={courseId} onChange={(e) => setCourseId(e.target.value)} required>
@@ -105,7 +99,6 @@ function FeedbackScheduleForm({ onSubmit, onCancel, courses, modules, moduleType
           ))}
         </select>
       </label>
-
       <label>
         Module:
         <select value={moduleId} onChange={(e) => setModuleId(e.target.value)} required>
@@ -117,7 +110,6 @@ function FeedbackScheduleForm({ onSubmit, onCancel, courses, modules, moduleType
           ))}
         </select>
       </label>
-
       <label>
         Module Type:
         <select value={moduleTypeId} onChange={(e) => setModuleTypeId(e.target.value)} required>
@@ -129,7 +121,6 @@ function FeedbackScheduleForm({ onSubmit, onCancel, courses, modules, moduleType
           ))}
         </select>
       </label>
-
       <label>
         Start Time:
         <input
@@ -139,7 +130,6 @@ function FeedbackScheduleForm({ onSubmit, onCancel, courses, modules, moduleType
           required
         />
       </label>
-
       <label>
         End Time:
         <input
@@ -149,7 +139,6 @@ function FeedbackScheduleForm({ onSubmit, onCancel, courses, modules, moduleType
           required
         />
       </label>
-
       <div style={{ marginTop: 12 }}>
         <button type="submit" className="btn btn-primary">
           Save
@@ -169,22 +158,19 @@ export default function Dashboard() {
   const [groups, setGroups] = useState([]);
   const [modules, setModules] = useState([]);
   const [moduleTypes, setModuleTypes] = useState([]);
-
   const [activeFeedbacks, setActiveFeedbacks] = useState([]);
   const [inactiveFeedbacks, setInactiveFeedbacks] = useState([]);
-
   const [studentCount, setStudentCount] = useState(0);
   const [students, setStudents] = useState([]);
-
+  const [selectedStudentCourseId, setSelectedStudentCourseId] = useState("");
   const [teacherCount, setTeacherCount] = useState(0);
   const [teachers, setTeachers] = useState([]);
-
   const [loading, setLoading] = useState(false);
 
   const [showCourseForm, setShowCourseForm] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null);
-
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const [selectedModuleCourseName, setSelectedModuleCourseName] = useState("");
 
   useEffect(() => {
     switch (activeSection) {
@@ -195,7 +181,9 @@ export default function Dashboard() {
         fetchGroups();
         break;
       case "Modules":
+        fetchCourses();
         fetchModules();
+        setSelectedModuleCourseName("");
         break;
       case "Module Types":
         fetchModuleTypes();
@@ -204,8 +192,10 @@ export default function Dashboard() {
         fetchFeedbacks();
         break;
       case "Students":
-        fetchStudents();
+        fetchCourses();
         fetchStudentCount();
+        fetchAllStudents();
+        setSelectedStudentCourseId("");
         break;
       case "Teachers":
         fetchTeachers();
@@ -216,6 +206,13 @@ export default function Dashboard() {
     }
   }, [activeSection]);
 
+  useEffect(() => {
+    if (activeSection === "Modules") {
+      fetchModules();
+    }
+  }, [selectedModuleCourseName]);
+
+  // Fetch functions remain unchanged, example:
   const fetchCourses = async () => {
     setLoading(true);
     try {
@@ -241,8 +238,15 @@ export default function Dashboard() {
   const fetchModules = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/module/allModules");
-      setModules(res.data.data || []);
+      if (!selectedModuleCourseName) {
+        const res = await api.get("/module/allModules");
+        setModules(res.data.data || []);
+      } else {
+        const res = await api.get(
+          `/module/allModulesbyCourse/${encodeURIComponent(selectedModuleCourseName)}`
+        );
+        setModules(res.data.data || []);
+      }
     } catch {
       setModules([]);
     }
@@ -283,12 +287,44 @@ export default function Dashboard() {
     }
   };
 
-  const fetchStudents = async () => {
+  const fetchAllStudents = async () => {
     try {
       const res = await api.get("/student/allStudents");
       setStudents(res.data.data || []);
     } catch {
       setStudents([]);
+    }
+  };
+
+  const fetchStudentsByCourse = async (course_id) => {
+    if (!course_id) {
+      fetchAllStudents();
+      return;
+    }
+    try {
+      const res = await api.get(`/student/studentsByCourse?course_id=${course_id}`);
+      setStudents(res.data.data || []);
+    } catch {
+      setStudents([]);
+    }
+  };
+
+  const handleCourseFilterChange = (e) => {
+    const value = e.target.value;
+    setSelectedStudentCourseId(value);
+    fetchStudentsByCourse(value);
+  };
+
+  const handleModuleCourseFilterChange = (e) => {
+    setSelectedModuleCourseName(e.target.value);
+  };
+
+  const fetchTeachers = async () => {
+    try {
+      const res = await api.get("/teacher/allTeachers");
+      setTeachers(res.data.data || []);
+    } catch {
+      setTeachers([]);
     }
   };
 
@@ -298,15 +334,6 @@ export default function Dashboard() {
       setTeacherCount(res.data.data.count || 0);
     } catch {
       setTeacherCount(0);
-    }
-  };
-
-  const fetchTeachers = async () => {
-    try {
-      const res = await api.get("/teacher/allTeachers");
-      setTeachers(res.data.data || []);
-    } catch {
-      setTeachers([]);
     }
   };
 
@@ -320,6 +347,8 @@ export default function Dashboard() {
     setShowCourseForm(true);
   };
 
+  // Delete handlers for course, group, module, student, teacher
+
   const handleDeleteCourse = async (course_id) => {
     if (!window.confirm("Are you sure you want to delete this course?")) return;
     try {
@@ -331,6 +360,53 @@ export default function Dashboard() {
     }
   };
 
+  const handleDeleteGroup = async (group_id) => {
+    if (!window.confirm("Are you sure you want to delete this group?")) return;
+    try {
+      await api.delete(`/courseGroup/deleteGroup/${group_id}`);
+      fetchGroups();
+      alert("Group deleted successfully");
+    } catch {
+      alert("Failed to delete group");
+    }
+  };
+
+  const handleDeleteModule = async (module_id) => {
+    if (!window.confirm("Are you sure you want to delete this module?")) return;
+    try {
+      await api.delete("/module/deleteModule", { data: { module_id } });
+      fetchModules();
+      alert("Module deleted successfully");
+    } catch {
+      alert("Failed to delete module");
+    }
+  };
+
+  const handleDeleteStudent = async (student_id) => {
+    if (!window.confirm("Are you sure you want to delete this student?")) return;
+    try {
+      await api.delete(`/student/deleteStudent/${student_id}`);
+      fetchStudentsByCourse(selectedStudentCourseId);
+      fetchStudentCount();
+      alert("Student deleted successfully");
+    } catch {
+      alert("Failed to delete student");
+    }
+  };
+
+  const handleDeleteTeacher = async (teacher_id) => {
+    if (!window.confirm("Are you sure you want to delete this teacher?")) return;
+    try {
+      await api.delete(`/teacher/deleteTeacher/${teacher_id}`);
+      fetchTeachers();
+      fetchTeacherCount();
+      alert("Teacher deleted successfully");
+    } catch {
+      alert("Failed to delete teacher");
+    }
+  };
+
+  // Course form submit
   const handleCourseFormSubmit = async (formData) => {
     try {
       if (editingCourse) {
@@ -346,6 +422,7 @@ export default function Dashboard() {
     }
   };
 
+  // Feedback submit
   const handleFeedbackSubmit = async (formData) => {
     try {
       await api.post("/feedbackSchedule/createFeedback", {
@@ -359,8 +436,7 @@ export default function Dashboard() {
       alert("Feedback created successfully");
       setShowFeedbackForm(false);
       fetchFeedbacks();
-    } catch (error) {
-      console.error(error);
+    } catch {
       alert("Failed to create feedback");
     }
   };
@@ -369,7 +445,7 @@ export default function Dashboard() {
     <div className="admin-root">
       <div className="sidebar">
         <div className="sidebar-header">Menu</div>
-        {menu.map((item) => (
+        {menu.map(item => (
           <div
             key={item.label}
             className={`sidebar-item ${activeSection === item.label ? "active" : ""}`}
@@ -380,7 +456,6 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
-
       <div className="admin-content">
         <h1>Admin Dashboard</h1>
 
@@ -394,7 +469,6 @@ export default function Dashboard() {
                 </button>
               )}
             </div>
-
             {showCourseForm && (
               <CourseForm
                 initialData={editingCourse}
@@ -405,35 +479,36 @@ export default function Dashboard() {
                 }}
               />
             )}
-
             <table className="admin-table" cellSpacing="0">
               <thead>
                 <tr>
                   <th>Course ID</th>
                   <th>Course Name</th>
-                  <th>Modules</th>
                   <th>Actions</th>
                 </tr>
               </thead>
-
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={4}>Loading...</td>
+                    <td colSpan={3}>Loading...</td>
                   </tr>
                 ) : (
-                  courses.map((course) => (
+                  courses.map(course => (
                     <tr key={course.id || course.course_id}>
                       <td>{course.id || course.course_id}</td>
                       <td>{course.name || course.course_name}</td>
-                      <td>{course.modules || "-"}</td>
                       <td>
-                        <button className="table-btn edit-btn" onClick={() => handleEditCourse(course)}>
+                        <button
+                          className="table-btn edit-btn"
+                          onClick={() => handleEditCourse(course)}
+                        >
                           Edit
                         </button>
                         <button
                           className="table-btn delete-btn"
-                          onClick={() => handleDeleteCourse(course.id || course.course_id)}
+                          onClick={() =>
+                            handleDeleteCourse(course.id || course.course_id)
+                          }
                         >
                           Delete
                         </button>
@@ -446,30 +521,29 @@ export default function Dashboard() {
           </div>
         )}
 
+
         {activeSection === "Groups" && (
           <div className="admin-table-card">
-            <div className="admin-table-title" style={{ marginBottom: 18 }}>
-              Group List
-            </div>
-
+            <div className="admin-table-title" style={{ marginBottom: 18 }}>Group List</div>
             <table className="admin-table" cellSpacing="0">
               <thead>
                 <tr>
                   <th>Group ID</th>
                   <th>Group Name</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
-
               <tbody>
                 {loading ? (
-                  <tr>
-                    <td colSpan={2}>Loading...</td>
-                  </tr>
+                  <tr><td colSpan={3}>Loading...</td></tr>
                 ) : (
-                  groups.map((group) => (
+                  groups.map(group => (
                     <tr key={group.group_id}>
                       <td>{group.group_id}</td>
                       <td>{group.group_name}</td>
+                      <td>
+                        <button className="table-btn delete-btn" onClick={() => handleDeleteGroup(group.group_id)}>Delete</button>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -478,32 +552,155 @@ export default function Dashboard() {
           </div>
         )}
 
+        {activeSection === "Students" && (
+          <div className="admin-table-card">
+            <div style={{ marginBottom: 16 }}>
+              <label>
+                Filter by Course:
+                <select
+                  value={selectedStudentCourseId}
+                  onChange={handleCourseFilterChange}
+                  style={{ marginLeft: 12 }}
+                >
+                  <option value="">All</option>
+                  {courses.map(c => (
+                    <option key={c.course_id} value={c.course_id}>{c.course_name}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="admin-table-title" style={{ marginBottom: 18 }}>
+              Students - Total: {studentCount}
+            </div>
+            <table className="admin-table" cellSpacing="0">
+              <thead>
+                <tr>
+                  <th>Student ID</th>
+                  <th>First Name</th>
+                  <th>Last Name</th>
+                  <th>Email</th>
+                  <th>PRN No</th>
+                  <th>Group ID</th>
+                  <th>Course Name</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {students.length === 0 ? (
+                  <tr><td colSpan={8}>No students found.</td></tr>
+                ) : (
+                  students.map(student => (
+                    <tr key={student.student_id}>
+                      <td>{student.student_id}</td>
+                      <td>{student.first_name}</td>
+                      <td>{student.last_name}</td>
+                      <td>{student.email}</td>
+                      <td>{student.prn_no}</td>
+                      <td>{student.group_id}</td>
+                      <td>{student.course_name || "-"}</td>
+                      <td>
+                        <button className="table-btn delete-btn" onClick={() => handleDeleteStudent(student.student_id)}>Delete</button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {activeSection === "Teachers" && (
+          <div className="admin-table-card">
+            <div className="admin-table-title" style={{ marginBottom: 18 }}>Teachers - Total: {teacherCount}</div>
+            <table className="admin-table" cellSpacing="0">
+              <thead>
+                <tr>
+                  <th>Teacher ID</th>
+                  <th>First Name</th>
+                  <th>Last Name</th>
+                  <th>Email</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {teachers.length === 0 ? (
+                  <tr><td colSpan={5}>No teachers found.</td></tr>
+                ) : (
+                  teachers.map(teacher => (
+                    <tr key={teacher.teacher_id}>
+                      <td>{teacher.teacher_id}</td>
+                      <td>{teacher.first_name}</td>
+                      <td>{teacher.last_name}</td>
+                      <td>{teacher.email || "-"}</td>
+                      <td>
+                        <button className="table-btn delete-btn" onClick={() => handleDeleteTeacher(teacher.teacher_id)}>Delete</button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Modules Section */}
         {activeSection === "Modules" && (
           <div className="admin-table-card">
+            <div style={{ marginBottom: 16 }}>
+              <label>
+                Filter by Course:
+                <select
+                  value={selectedModuleCourseName}
+                  onChange={(e) => {
+                    console.log("Filtering modules by course:", e.target.value);
+                    setSelectedModuleCourseName(e.target.value);
+                  }}
+                  style={{ marginLeft: 12 }}
+                >
+                  <option value="">All</option>
+                  {courses.map((c) => (
+                    <option key={c.course_id} value={c.course_name}>
+                      {c.course_name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
             <div className="admin-table-title" style={{ marginBottom: 18 }}>
               Module List
             </div>
-
             <table className="admin-table" cellSpacing="0">
               <thead>
                 <tr>
                   <th>Module ID</th>
                   <th>Module Name</th>
                   <th>Course Name</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
-
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={3}>Loading...</td>
+                    <td colSpan={4}>Loading...</td>
+                  </tr>
+                ) : modules.length === 0 ? (
+                  <tr>
+                    <td colSpan={4}>No modules found.</td>
                   </tr>
                 ) : (
                   modules.map((module) => (
                     <tr key={module.module_id}>
                       <td>{module.module_id}</td>
                       <td>{module.module_name}</td>
-                      <td>{module.course_name}</td>
+                      <td>{module.course_name ? module.course_name : <span style={{ color: "gray" }}>N/A</span>}</td>
+                      <td>
+                        <button
+                          className="table-btn delete-btn"
+                          onClick={() => handleDeleteModule(module.module_id)}
+                        >
+                          Delete
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -512,30 +709,50 @@ export default function Dashboard() {
           </div>
         )}
 
+
+
+
+
         {activeSection === "Module Types" && (
           <div className="admin-table-card">
-            <div className="admin-table-title" style={{ marginBottom: 18 }}>
-              Module Types List
-            </div>
-
+            <div className="admin-table-title" style={{ marginBottom: 18 }}>Module Types</div>
             <table className="admin-table" cellSpacing="0">
               <thead>
                 <tr>
                   <th>Module Type ID</th>
                   <th>Module Type Name</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
-
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={2}>Loading...</td>
+                    <td colSpan={3}>Loading...</td>
+                  </tr>
+                ) : moduleTypes.length === 0 ? (
+                  <tr>
+                    <td colSpan={3}>No module types found.</td>
                   </tr>
                 ) : (
-                  moduleTypes.map((mt) => (
-                    <tr key={mt.module_type_id}>
-                      <td>{mt.module_type_id}</td>
-                      <td>{mt.module_type_name}</td>
+                  moduleTypes.map(type => (
+                    <tr key={type.module_type_id}>
+                      <td>{type.module_type_id}</td>
+                      <td>{type.module_type_name}</td>
+                      <td>
+                        <button
+                          className="table-btn delete-btn"
+                          onClick={async () => {
+                            if (!window.confirm("Are you sure you want to delete this module type?")) return;
+                            try {
+                              await api.delete(`/moduleType/deleteModuleType/${type.module_type_id}`);
+                              fetchModuleTypes();
+                              alert("Module type deleted successfully");
+                            } catch {
+                              alert("Failed to delete module type");
+                            }
+                          }}
+                        >Delete</button>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -544,6 +761,8 @@ export default function Dashboard() {
           </div>
         )}
 
+
+        {/* Feedback Schedules Section */}
         {activeSection === "Feedback Schedules" && (
           <div>
             {!showFeedbackForm && (
@@ -555,7 +774,6 @@ export default function Dashboard() {
                 >
                   Create Feedback Schedule
                 </button>
-
                 <div style={{ marginBottom: 20 }}>
                   <strong>Active Feedbacks</strong>
                   {loading && <p>Loading...</p>}
@@ -575,7 +793,6 @@ export default function Dashboard() {
                     </ul>
                   )}
                 </div>
-
                 <div style={{ marginTop: 20 }}>
                   <strong>Inactive Feedbacks</strong>
                   {loading && <p>Loading...</p>}
@@ -597,7 +814,6 @@ export default function Dashboard() {
                 </div>
               </>
             )}
-
             {showFeedbackForm && (
               <FeedbackScheduleForm
                 onSubmit={handleFeedbackSubmit}
@@ -611,83 +827,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {activeSection === "Students" && (
-          <div className="admin-table-card">
-            <div className="admin-table-title" style={{ marginBottom: 18 }}>
-              Students - Total: {studentCount}
-            </div>
-
-            <table className="admin-table" cellSpacing="0">
-              <thead>
-                <tr>
-                  <th>Student ID</th>
-                  <th>First Name</th>
-                  <th>Last Name</th>
-                  <th>Email</th>
-                  <th>PRN No</th>
-                  <th>Group ID</th>
-                  <th>Course Name</th>
-                </tr>
-              </thead>
-              <tbody>
-                {students.length === 0 ? (
-                  <tr>
-                    <td colSpan={7}>No students found.</td>
-                  </tr>
-                ) : (
-                  students.map((student) => (
-                    <tr key={student.student_id}>
-                      <td>{student.student_id}</td>
-                      <td>{student.first_name}</td>
-                      <td>{student.last_name}</td>
-                      <td>{student.email}</td>
-                      <td>{student.prn_no}</td>
-                      <td>{student.group_id}</td>
-                      <td>{student.course_name || "-"}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {activeSection === "Teachers" && (
-          <div className="admin-table-card">
-            <div className="admin-table-title" style={{ marginBottom: 18 }}>
-              Teachers - Total: {teacherCount}
-            </div>
-
-            <table className="admin-table" cellSpacing="0">
-              <thead>
-                <tr>
-                  <th>Teacher ID</th>
-                  <th>First Name</th>
-                  <th>Last Name</th>
-                  <th>Email</th>
-                 
-                </tr>
-              </thead>
-              <tbody>
-                {teachers.length === 0 ? (
-                  <tr>
-                    <td colSpan={6}>No teachers found.</td>
-                  </tr>
-                ) : (
-                  teachers.map((teacher) => (
-                    <tr key={teacher.teacher_id}>
-                      <td>{teacher.teacher_id}</td>
-                      <td>{teacher.first_name}</td>
-                      <td>{teacher.last_name}</td>
-                      <td>{teacher.email || "-"}</td>
-                      
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
     </div>
   );
