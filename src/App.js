@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import TeacherRegister from './pages/TeacherRegister.js';
 import TeacherLogin from './pages/TeacherLogin.js';
 import TeacherDashboard from './pages/TeacherDashboard.js';
-
 import './App.css';
 
 function App() {

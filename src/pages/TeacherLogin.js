@@ -12,8 +12,10 @@ function TeacherLogin() {
   const handleSubmit = e => {
     e.preventDefault();
     axios.post('http://localhost:5000/teachers/login', formData)
-      .then(() => {
+      .then(response => {
+        localStorage.setItem('token', response.data.data.token);
         alert('Login successful!');
+        setError('');
         navigate('/dashboard');
       })
       .catch(() => setError('Login failed. Check your credentials.'));
@@ -24,9 +26,9 @@ function TeacherLogin() {
       <h2>Teacher Login</h2>
       {error && <div className="alert alert-danger">{error}</div>}
       <form onSubmit={handleSubmit}>
-        <input className="form-control mb-3" name="email" type="email" value={formData.email} onChange={handleChange} placeholder="Email" required />
-        <input className="form-control mb-3" name="password" type="password" value={formData.password} onChange={handleChange} placeholder="Password" required />
-        <button type="submit" className="btn btn-success w-100">Login</button>
+        <input name="email" type="email" value={formData.email} onChange={handleChange} placeholder="Email" required />
+        <input name="password" type="password" value={formData.password} onChange={handleChange} placeholder="Password" required />
+        <button type="submit">Login</button>
       </form>
     </div>
   );
