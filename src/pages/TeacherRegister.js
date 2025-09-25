@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';  // 1. Import
+import { useNavigate } from 'react-router-dom';
 
 function TeacherRegister() {
   const [formData, setFormData] = useState({
@@ -9,10 +9,10 @@ function TeacherRegister() {
     email: '',
     password: '',
   });
+
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  
-  const navigate = useNavigate();  // 2. Hook
+  const navigate = useNavigate();
 
   const handleChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -22,7 +22,7 @@ function TeacherRegister() {
       .then(() => {
         setMessage('Registration successful! Redirecting to login...');
         setError('');
-        navigate('/login');  // 3. Redirect here
+        navigate('/login');
       })
       .catch(error => {
         if (error.response && error.response.data) {
@@ -53,4 +53,3 @@ function TeacherRegister() {
 }
 
 export default TeacherRegister;
-

@@ -21,7 +21,7 @@ function TeacherDashboard() {
       });
   }, [navigate]);
 
-  const handleLogout = () => {
+  const logout = () => {
     localStorage.removeItem('token');
     navigate('/login');
   };
@@ -29,11 +29,9 @@ function TeacherDashboard() {
   return (
     <div className="card p-4" style={{ maxWidth: 600, margin: 'auto' }}>
       <h2>Welcome, {teacherName}</h2>
-      <button onClick={handleLogout}>Logout</button>
+      <button onClick={logout} className="btn btn-danger">Logout</button>
     </div>
   );
 }
 
 export default TeacherDashboard;
-
-

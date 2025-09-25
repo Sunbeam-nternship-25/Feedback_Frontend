@@ -17,7 +17,7 @@ function TeacherLogin() {
           localStorage.setItem('token', response.data.data.token);
           alert('Login successful!');
           setError('');
-          navigate('/dashboard');
+          navigate('/dashboard'); // redirect here
         } else {
           setError('Token missing in response');
         }
