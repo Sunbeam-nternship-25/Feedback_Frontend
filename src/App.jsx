@@ -9,7 +9,9 @@ import { Routes, Route } from 'react-router-dom'
 import StudentRegister from './pages/StudentRegistration/StudentRegister'
 import TeacherRegister from './pages/TeacherRegistration/TeacherRegister'
 import CocoRegister from './pages/CocoRegistration/CocoRegister'
-import CreateFeedback from './pages/Feedback/CreateFeeback'
+import CreateFeedback from './pages/Feedback/CreateFeedback'
+import CocoDashboard from './pages/CocoDashboard/CocoDashboard'
+import CocoStudentFeedback from './pages/Feedback/CocoStudentFeedbackStatus'
 
 
 
@@ -27,6 +29,9 @@ function App() {
         <Route path="/teacherRegister" element={<TeacherRegister/>}/>
         <Route path="/CocoRegister" element={<CocoRegister/>}/>
         <Route path="/CreateFeedback" element={<CreateFeedback/>}/>
+        <Route path="/CocoDashboard" element={<CocoDashboard/>}/>
+        <Route path="/CocoStudentFeedbackStatus" element={<CocoStudentFeedback/>}/>
+        <Route path='/students/:id' element={<CocoStudentFeedback/>}/>
        
       </Routes>
       <ToastContainer />
